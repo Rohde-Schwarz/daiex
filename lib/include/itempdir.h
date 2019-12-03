@@ -1,0 +1,60 @@
+/*
+	* Copyright (c) Rohde & Schwarz
+	*
+	* Licensed under the Apache License, Version 2.0 (the "License");
+	* you may not use this file except in compliance with the License.
+	* You may obtain a copy of the License at
+	*
+	*     http://www.apache.org/licenses/LICENSE-2.0
+	*
+	* Unless required by applicable law or agreed to in writing, software
+	* distributed under the License is distributed on an "AS IS" BASIS,
+	* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	* See the License for the specific language governing permissions and
+	* limitations under the License.
+*/
+
+/*!
+* @file      itempdir.h
+*
+* @brief     This is the header file of class ITempDir.
+*
+* @details   This class contains the interface definition ITempDir.
+*
+* @copyright Copyright (c) Rohde &amp; Schwarz GmbH &amp; Co. KG, Munich.
+*            All rights reserved.
+*/
+
+#pragma once
+
+#include <string>
+#include <ctime>
+
+namespace rohdeschwarz
+{
+  namespace mosaik
+  {
+    namespace dataimportexport
+    {
+      /**
+      * @brief Declares methods to get and set the temporary directory used by 
+      * several file formats to buffer temp files.
+      */
+      class ITempDir
+      {
+      public:
+        /**
+         @brief Sets a directory used to write temporary files to.
+         Only required when writing files. Path must be set before writeOpen() is called.
+         @param [in]  path Fully qualified path.
+        */virtual int setTempDir(const std::string& path) = 0;
+
+        /**
+          @returns Returns a path used to write temporary files to.
+          If not file-writer has been initialized an empty string is
+          returned.
+        */virtual std::string getTempDir() const = 0;
+      };
+    }
+  }
+}

@@ -1,0 +1,226 @@
+/*!
+@page ReleaseNotes_page Release Notes & Known Bugs
+
+-------------------------------------------------------------------------------
+Release Notes for Mosaik Module LibDataImportExport
+-------------------------------------------------------------------------------
+
+Release 1.0.17 (2019-08-08) @n
+Lines of Code    @b 0  @n
+
+
+C O N T E N T S
+
+1. Release Notes
+2. Known Bugs
+
+1. Release Notes
+-------------------------------------------------------------------------------
+Release 1.0.17 (2019-08-08)
+--------------------------
+- Added: first version of Ammos file support
+- Added: tested with Ubuntu 18.04
+- Remarks: not tested with macOS
+
+Release 1.0.16 (2019-06-05)
+--------------------------
+- Fixed: iqx metadata meets VSE conventions
+- Fixed: adapted to new iqxtypes.h
+- Added: first version of macOS support
+
+Release 1.0.15 (2019-04-16)
+--------------------------
+- Added: iqx format supports trigger frame for VSE compatibility
+- Fixed: open different iq_tar file with same name
+- Fixed: toolset number for VS2017 corrected to 15
+- Fixed: made exception parameter in catch const ref
+
+Release 1.0.14 (2019-01-09)
+--------------------------
+- Fixed: csv file - Frequency without decimal value produces wrong value.
+- Fixed: wv file - multiple open
+
+
+Release 1.0.13 (2018-01-16)
+--------------------------
+- Fixed: written csv file with decimal point can not be read again.
+
+Release 1.0.12 (2017-12-08)
+--------------------------
+
+### Changes ###
+- Added WV format
+
+Release 1.0.11 (2017-10-27)
+--------------------------
+
+### Bug Fixes ###
+- Changed IqTar file format version back from 3 to 1.
+
+Release 1.0.10 (2017-10-11)
+--------------------------
+
+### Bug Fixes ###
+- Integration of new open_IqTar_xml_file_in_web_browser.xslt version 3.
+- Fixed xsd validation bugs (date format, file name format).
+- Detection of csv column separator fixed.
+
+### Changes ###
+- Added IQX format
+
+Release 1.0.9 (2017-08-29)
+--------------------------
+
+### Bug Fixes ###
+
+### Changes ###
+- Support Visual Studio 2013
+- Support Visual Studio 2017
+- Removed 32 bit support
+
+
+Release 1.0.8 (2017-07-03)
+--------------------------
+
+### Bug Fixes ###
+- Mismatch between timestamps in iq.tar filename and metadata xml (defect 332052).
+
+
+Release 1.0.7 (2017-05-24)
+--------------------------
+
+### Changes ###
+- String conversion of libarchive makes use of setlocale, which is not a thread-safe function.
+  On request of 1ES these function calls are protected with a mutex. Can be removed with libarchive version 4.
+
+
+
+Release 1.0.6 (2017-05-11)
+--------------------------
+
+### New Features ###
+- Support to write IqTar format without writing interim temp. files if number of i/q values to be written is known in advance (task 311095). 
+  Use IqTar->disableTempFile(.) before calling writeOpen(.).
+
+### Bug Fixes ###
+- Support for UTF-8 filenames (defect 308306).
+  KNOWN BUG: opening matlab files with "special characters" (aka non-ascii) in filename will fail under windows if 8.3-filename support
+  is disabled for harddrive (command "dir /x" should list short filenames; 8.3-filenames are always enabled in windows portition). 
+  LibDaiEx will convert the specified filename to a 8.3-short-filename for windows matlab format
+  before opening the file. If 8.3-support is disabled, a "file-not-fount (-17)" exception will be raised.
+
+### Changes ###
+- New naming scheme for content of iq.tar files, i.e. "File_YYYYMMDD_hhmmss.complex1ch.float32(.xml)" (task 311096).
+- Upgrade to libMatIo version 1.5.10
+- Upgrade to libarchive version 3.3.1
+
+
+Release 1.0.5 (2017-03-21)
+--------------------------
+
+### Bug Fixes ###
+- Header file settings.h was missing in artifactory-zip.
+- Settings class was not exposed to .net wrapper
+
+
+Release 1.0.4 (2017-02-24)
+--------------------------
+
+### Changes ###
+- Internal metadata is cleared when calling readOpen() to avoid duplicate entries when re-opening a file multiple times.
+
+
+Release 1.0.3 (2017-02-14)
+--------------------------
+
+### Bug Fixes ###
+- Compressed matlab v7.3 files could not be read since libHDF5 was not configured correctly to use zlib.
+
+
+Release 1.0.2 (2017-02-10)
+--------------------------
+
+### Bug Fixes ###
+- IqCsv file format: decimal value separator was not applied correctly. Values were always saved with '.'. Test case was wrong, fixed both, value formatter and test.
+
+
+Release 1.0.1 (2017-02-07)
+--------------------------
+
+### Changes ####
+- rapidxml has been replaced by pugixml to avoid throwing an exception when parsing of xml fails (request 1ES).
+
+
+Release 1.0.0 (2017-01-30)
+--------------------------
+
+### New Features ###
+- I/Q preview for iq.tar file format
+
+### Limitations ###
+- The Matlab file formats underly various restrictions w.r.t. the file size, number of array elements, and
+  target platform.
+  See http://de.mathworks.com/help/matlab/import_export/mat-file-versions.html and 
+  https://de.mathworks.com/matlabcentral/answers/91711-what-is-the-maximum-matrix-size-for-each-platform
+  for detailed information.
+- When writing matlab file format, the entire I/Q data is loaded to RAM before being written to .mat-file.
+  I/Q data should be written step-wise in future releases.
+- CSV file format read performance is bad, probably due to the usage of streams. Access method should be changed
+  in future releases.
+- Merging I and Q data in IQW file format with data order IQIQIQ in ::close() method is a long running operation.
+  Future releases should use memory mapped file instream of stream to merge data.
+
+
+
+Release 0.0.9 (2017-01-13)
+--------------------------
+
+Initial release of cross-platform I/Q file format library LibDataImportExport. Currently tested compilers are Visual Studio 2012 c++, Visual Studio 2012 .NET 4.0 and GCC 4.9.3.
+
+### New Features ###
+- Supported file formats that can be read and write:
+  - IQ-Tar
+  - IQW
+  - CSV
+  - Matlab file format v4 and v7.3
+- Interface IDataImportExport supports methods to read (readArray(.), readChannel(.))
+  and write (appendArrays(.), appendChannels(.)) I/Q data block-wise. Use readOpen(.) or
+  writeOpen(.) respectively to open a file in read/write mode and call close() when done
+  with all file operations.
+- Metadata can also be accessed via interface IDataImportExport.
+- All interface functions return error codes instead of throwing exceptions.
+- Auxillary functions are provided to query all possible file formats, 
+  file extensions and a file filter string (class FileTypeService). A factory method is
+  provided to instantiate an object corresponding to the specified file format.
+- A .NET wrapper (daiex_wrapper.dll) is provided to make the library useable within .NET applications.
+  The .NET library will throw DaiExceptions instead of returning error codes.
+
+
+### Limitations ###
+- The current release (0.0.9) calculates a wrong I/Q preview in IqTar file format. The preview should
+  be disabled via iqtarfile->setPreviewEnabled(false).
+- The Matlab file formats underly various restrictions w.r.t. the file size, number of array elements, and
+  target platform.
+  See http://de.mathworks.com/help/matlab/import_export/mat-file-versions.html and 
+  https://de.mathworks.com/matlabcentral/answers/91711-what-is-the-maximum-matrix-size-for-each-platform
+  for detailed information.
+- When writing matlab file format, the entire I/Q data is loaded to RAM before being written to .mat-file.
+  I/Q data should be written step-wise in future releases.
+- CSV file format read performance is bad, probably due to the usage of streams. Access method should be changed
+  in future releases.
+- Merging I and Q data in IQW file format with data order IQIQIQ in ::close() method is a long running operation.
+  Future releases should use memory mapped file instream of stream to merge data.
+- Documentation has still room for improvement....
+
+--------------------------------------------------------------------------------
+2. Known Bugs
+--------------------------------------------------------------------------------
+
+- windws / matlab file format: 
+  opening matlab files with "special characters" (aka non-ascii) in filename will fail under window if 8.3-filename support
+  is disabled for harddrive. LibDaiEx will convert the specified filename to a 8.3-short-filename for windows matlab format
+  before opening the file. If 8.3-support is disabled, a "file-not-fount (-17)" exception will be raised.
+
+
+
+*/

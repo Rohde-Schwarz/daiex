@@ -1,0 +1,16 @@
+#
+# Find package ZLib
+#
+
+IF(APPLE)
+ELSE()
+include( ExternalProject )
+ENDIF()
+IF( WIN32 )
+  FIND_PACKAGE( ZLIB 1.2.11.1 EXACT REQUIRED NO_MODULE )
+  message (ZLIB_LIB ${ZLIB_LIB})
+ELSEIF(APPLE)
+  FIND_PACKAGE( ZLIB )
+ELSE()  
+  FIND_PACKAGE( ZLIB REQUIRED )
+ENDIF()

@@ -1,0 +1,29 @@
+﻿saved by Rohde & Schwarz MOSAIK DataImportExport (version 0.4.0);;;;;
+DataImportExport_MandatoryData;;;;;
+Name;TestEqualNrOfColumnsDifferingSamplesSingle;;;;
+Comment;test empty columns if not all arrays have same length.;;;;
+DateTime;2013-10-16T18:47:33;;;;
+Format;polar;;;;
+DataType;float32;;;;
+NumberOfChannels;3;;;;
+Ch1_ChannelName;Kanal0;;;;
+Ch1_Samples;7;;;;
+Ch1_Clock[Hz];3,2000000E+007;;;;
+Ch1_CenterFrequency[Hz];1,3250000E+010;;;;
+Ch2_ChannelName;Kanal1;;;;
+Ch2_Samples;5;;;;
+Ch2_Clock[Hz];3,2000000E+007;;;;
+Ch2_CenterFrequency[Hz];1,3250000E+010;;;;
+Ch3_ChannelName;Kanal2;;;;
+Ch3_Samples;7;;;;
+Ch3_Clock[Hz];3,2000000E+007;;;;
+Ch3_CenterFrequency[Hz];1,3250000E+010;;;;
+DataImportExport_EndHeaderSection;;;;;
+Kanal0_I;Kanal0_Q;Kanal1_I;Kanal1_Q;Kanal2_I;Kanal2_Q
+1,1111111E+003;1,1111111E+003;1,1111111E+003;1,1111111E+003;1,1111111E+003;1,1111111E+003
+2,2222222E+003;2,2222222E+003;2,2222222E+003;2,2222222E+003;2,2222222E+003;2,2222222E+003
+3,3333333E+003;3,3333333E+003;3,3333333E+003;3,3333333E+003;3,3333333E+003;3,3333333E+003
+4,4444443E+003;4,4444443E+003;4,4444443E+003;4,4444443E+003;4,4444443E+003;4,4444443E+003
+5,5555557E+003;5,5555557E+003;5,5555557E+003;5,5555557E+003;5,5555557E+003;5,5555557E+003
+6,6666602E+002;6,6666602E+002;;;6,6666602E+002;6,6666602E+002
+7,7777781E+004;7,7777781E+004;;;7,7777781E+004;7,7777781E+004

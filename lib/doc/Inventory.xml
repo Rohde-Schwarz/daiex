@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Inventory xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="Inventory.xsd">
+  <Header>
+    <Productname>LibDataImportExport 1.0.17</Productname>
+    <Responsible>Rohde &amp Schwarz</Responsible>
+    <Division>Test &amp; Measurement</Division>
+    <Producttype></Producttype>
+    <ValidForInstruments></ValidForInstruments>
+  </Header>
+  <OpenSourceModules>
+    <Module>
+      <Modulename>zlib</Modulename>
+      <Version>1.2.11</Version>
+      <LicenseDbReference>Zlib</LicenseDbReference>
+      <Origin>http://zlib.net/zlib-1.2.11.tar.gz</Origin>
+      <Copyright>
+        Copyright (c) 1995-2013 Jean-loup Gailly and Mark Adler
+      </Copyright>
+      <Notice>added two files in devpackage and changed cmakelist.txt for find_package</Notice>
+    </Module>
+    <Module>
+      <Modulename>libarchive</Modulename>
+      <Version>3.1.2</Version>
+      <LicenseDbReference>BSD-2-Clause</LicenseDbReference>
+      <Origin>http://www.libarchive.org/downloads/libarchive-3.2.1.tar.gz</Origin>
+      <Copyright>
+        Copyright (c) 2003-2009 Tim Kientzle
+      </Copyright>
+      <Notice></Notice>
+    </Module>
+    <Module>
+      <Modulename>libhdf5</Modulename>
+      <Version>1.10.0-patch1</Version>
+      <LicenseDbReference>HDF5</LicenseDbReference>
+      <Origin>https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar</Origin>
+      <Copyright>
+        Copyright 2006-2016 by The HDF Group.
+      </Copyright>
+      <Notice></Notice>
+    </Module>
+    <Module>
+      <Modulename>matio</Modulename>
+      <Version>1.5.8</Version>
+      <LicenseDbReference>BSD-2-Clause</LicenseDbReference>
+      <Origin>https://github.com/tbeu/matio/releases/tag/v1.5.8</Origin>
+      <Copyright>
+        Copyright (c) 2011-2016, Christopher C. Hulbert
+      </Copyright>
+      <Notice></Notice>
+    </Module>
+    <Module>
+      <Modulename>Memory-Mapped File C++</Modulename>
+      <Version>2017-01-31</Version>
+      <LicenseDbReference>MPL-2.0</LicenseDbReference>
+      <Origin>https://github.com/carlomilanesi/cpp-mmf</Origin>
+      <Copyright>
+        Copyright (c) 2014, Carlo Milanesi
+      </Copyright>
+      <Notice></Notice>
+    </Module>
+    <Module>
+      <Modulename>PugiXml</Modulename>
+      <Version>1.8</Version>
+      <LicenseDbReference>MIT</LicenseDbReference>
+      <Origin>https://github.com/zeux/pugixml</Origin>
+      <Copyright>
+        Copyright (C) 2006-2017, by Arseny Kapoulkine
+      </Copyright>
+      <Notice></Notice>
+    </Module>
+  </OpenSourceModules>
+</Inventory>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2016 sp1 (http://www.altova.com) by ﻿ (Rohde & Schwarz GmbH & Co. KG) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" elementFormDefault="qualified" attributeFormDefault="unqualified" vc:minVersion="1.1">
+	<xs:element name="Inventory">
+		<xs:annotation>
+			<xs:documentation>Open Source Modules of all Projects</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Header"/>
+				<xs:element ref="OpenSourceModules"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Header">
+		<xs:annotation>
+			<xs:documentation>Data to describe the development project</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Productname"/>
+				<xs:element ref="Responsible" minOccurs="0"/>
+				<xs:element ref="Division"/>
+				<xs:element ref="Producttype"/>
+				<xs:element ref="ValidForInstruments"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Division" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>i.e. Test and Measurement</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="ValidForInstruments" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>List of all Devices, the OSA is valid for, because the same software is used</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="OpenSourceModules">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Module" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Module">
+		<xs:annotation>
+			<xs:documentation>Copy and paste whole 'Module' as often as required and replace the "dummy" of its components.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="Modulename"/>
+				<xs:element ref="Version" minOccurs="0"/>
+				<xs:element ref="LicenseDbReference"/>
+				<xs:element ref="Origin" minOccurs="0"/>
+				<xs:element ref="Copyright"/>
+				<xs:element ref="Notice" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="Modulename" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>Insert for example "glibc"</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Version" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>Insert for example "1.1.1"</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="LicenseDbReference" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>Use the Identifier from http://spdx.org/licenses/</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Copyright" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>Insert the whole copyright statement from the softwarepackage</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Notice" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>Insert additional text, that has to be printed in the OSA. If Software is under Apache 2.0, than insert the content of the NOTICE-File from the softwarepackage.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Responsible" type="xs:string">
+		<xs:annotation>
+			<xs:documentation>Insert for example the Project leader SWs Name</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="Productname" type="xs:string"/>
+	<xs:element name="Producttype" type="xs:string"/>
+	<xs:element name="Origin" type="xs:anyURI">
+		<xs:annotation>
+			<xs:documentation>Insert the downloadlink of the softwarepackage</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+</xs:schema>

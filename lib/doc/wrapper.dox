@@ -1,0 +1,241 @@
+/*!
+ * @file      wrapper.dox
+ * 
+ * @brief     Doxygen source file containing .NET Wrapper page.
+ * 
+ * @details   Contains the description for the .NET Wrapper page of the doxygen
+ *            generated help page.
+ *            This file is not meant for compilation, it contains documentation.
+ * 
+ * 
+ * @copyright Copyright (c) Rohde &amp; Schwarz GmbH &amp; Co. KG, Munich.
+ *            All rights reserved.
+ */
+
+/*!
+@page wrapper_page .NET Wrapper
+
+The LibDataImportExport library provides a .NET Wrapper for the native c++ dll, in order to
+make the functionallity of LibDataImportExport usable in managed projects. An installation of 
+the .NET Framework is required on the target machine. 
+
+Setup
+=====
+
+In this section it is described how to add the wrapper assembly to an existing .NET project.
+All preconditions for the usage are also listed at this point.
+
+Preconditions
+-------------
+
+The LibDataImportExport library is a native c++ library that comes with an additional .NET wrapper.
+Therefore, the .NET Framework version 4.0 as well as the Microsoft Visual Studio 2012 Runtime need to 
+be installed on the target system to make use of the library.
+
+Visual Studio
+-------------
+
+If you want to use the library in your application you need to add the
+reference of the assembly @c daiex_wrapper.dll to your project.
+
+Please refer to the general documentation on @ref howto_getartifacts_page.
+
+To add the assembly to your project right click in the solution explorer at the reference folder. 
+In the upcoming context menu select "Add Reference...".
+@image html AddRef.png
+
+A dialog for selecting the assembly is shown. Within the tab "Browse" you can
+choose the folder, where the @c daiex_wrapper.dll is located.
+Select the assembly and press "OK".
+@image html AddRefDataImportExport.png
+
+Now the reference of @c daiex_wrapper.dll is added to your project. Make sure to locate the native @c daiex.dll
+next to @c daiex_wrapper.dll.
+
+To use the LibDataImportExport API in .NET, add the according using directive:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+using namespace RohdeSchwarz::Mosaik::DataImportExport;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Summary
+-------
+
+- Install .NET Framework ( >= 4.0 ).
+- Install Visual Studio 2017 or the corresponding Microsoft Runtime 
+- Download DataImportExport zip archive 
+- Add the reference of @c daiex_wrapper.dll assembly to your project.
+- Add using directive to your file.
+
+  
+&nbsp;
+
+-------------------------------------------------------------------------------
+
+Usage
+=====
+
+This section describes the public interfaces of the assembly @c daiex_wrapper.dll.
+For each of the file format specific classes of the native c++ library exists a wrapped-up managed version. 
+The main interface to perform read and write operations is @c RohdeSchwarz.Mosaik.DataImportExport.IDataImportExport "IDataImportExport", 
+
+In order to read data from a file, you need to create an object that corresponds to the
+file format, for example IqTar. 
+
+The instantiation can either be done explicitly, i.e.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IqTar readFile = new IqTar(@"c:\test.iq.tar");
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+or by using a factory method provided by the auxillary class @c RohdeSchwarz.Mosaik.DataImportExport.FileTypeService "FileTypeService" to access the general interface
+IDataImportExport.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IDataImportExport readfile = FileTypeService.Create("c:\\test.iq.tar", FileType.Iqtar);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+All strings passed to DataImportExport classes will be converted to UTF-8 encoding.
+
+@c RohdeSchwarz.Mosaik.DataImportExport.FileTypeService can also be used to query the available file formats
+via the property (@c RohdeSchwarz.Mosaik.DataImportExport.FileTypeService.PossibleFileFormats),
+the file extensions of a specific format (@c RohdeSchwarz.Mosaik.DataImportExport.FileTypeService.GetFileExtension) and a filter string
+that can be used in file dialogs (@c RohdeSchwarz.Mosaik.DataImportExport.FileTypeService.GetFileFilter).
+
+To read data from the file, the file must be opened to scan the contained data. During this process only meta data will be read, but no actual I/Q values.
+In an error-case, a @c RohdeSchwarz.Mosaik.DataImportExport.DaiException will be thrown. The exception contains the error code of the underlying
+c++ implementation, an error text can be obtained via the "Message"-property of the exception.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// catch DaiException, thrown in error case
+try
+{
+  // open file and read array names of I/Q data.
+  IList<string> arrayNames = readFile.ReadOpen();
+ 
+  // get channel information and metadata
+  IList channelInformation = readFile.ChannelInformation;
+  IDictionary<string, string> metadata = readFile.Metadata;
+
+  System.Console.WriteLine("Number of channels: " + channelInformation.Count);
+  foreach (var channel in channelInformation)
+  {
+    System.Console.WriteLine("Information for channel named " '" + channel.ChannelName + "' ": clock rate: " + channel.ClockRate +  ", center frequency: " + channel.Frequency);
+  }
+
+  foreach (var kvp in metadata)
+  {
+    System.Console.WriteLine("Key: " + kvp.Key + " has value: " + kvp.Value);
+  }
+}
+catch (DaiException e)
+{
+  System.Console.WriteLine("Error: " + e.ErrorCode + " : " + e.Message);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+The actual I/Q data arrays can be accessed using the corresponding array names returned by @c IDataImportExport.ReadOpen.
+Each data array can be read with single or double precision regardless of the precision used to save the data to file. The read
+methods will perform the conversion internally. 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+for (int arrayIdx = 0; arrayIdx < arrayNames.Count; ++arrayIdx)
+{
+  // get the number of values stored in the array
+  Int64 size = readFile.GetArraySize(arrayNames[arrayIdx]);
+
+  // Read data into vector.
+  // For better read performance, resize the vector to the number of elements you want to read.
+  // Otherwise, memory allocation will be performed by the read operation.
+  IList<float> floatValues = new List<float>(size);
+
+  // read data
+  readFile.ReadArray(arrayNames[arrayIdx], ref floatValues, size);
+
+  // If you would like to read only a certain selection of the data array, define an additional offset.
+  // The offset defines the number of values that are skipped before the read operation starts. 
+  int offset = 10;
+  int nofValuesToRead = 100;
+  readFile.ReadArray(arrayNames[arrayIdx], floatVector, nofValuesToRead, offset);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+Data can not only be read array-wise using the stored array names (e.g. "Channel1_I", "Channel1_Q"), 
+but also channel-wise (e.g. "Channel1"). Therefor use
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  readFile.ReadChannel("Channel1", floatValues, size);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+The read-offset specified in @c ReadChannel refers to the number of I/Q pairs, e.g. an offset of 4
+skips the first 2 I/Q pairs.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  readFile.ReadChannel("Channel1", floatValues, size, offset);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you are done with your read operations, close the file by calling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+  readFile.Close();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+__Attention:__ When reading large amounts of data incrementally reuse the allocated memory in order
+to avoid heap fragmentation. Array length is returned as int64_t as data arrays in a file can be very large,
+but count of values that can be read with one function call is restricted to size_t.
+
+Saving data to file is realized in a similar fashion than reading data. Therefore use methods
+@c WriteOpen, @c WriteArray or @c WriteChannel and @c Close.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IList<IList<float>> writeFloat;
+// ... fill data ...
+// writeFloat contains all data as list, i.g. List<List of Channel1_I values, List of Channel1_Q values>
+// for a 1 Channel complex data array. For two complex channels, writeFloat must contain 4 data lists, etc.
+
+// create channel information
+double centerFreq = 15.5;
+double clock = 1000.2;
+IList<ChannelInfo> channelInfos = new List<ChannelInfo>();
+channelInfos.Add(new ChannelInfo("Channel1", clock, centerFreq));
+
+try
+{
+  // create object of desired file format
+  IqTar writeFile = new IqTar(@"c:\myfile.iq.tar");
+
+  // open file for write operations: define the I/Q data format used and the number of arrays to be written.
+  int nofArraysToWrite = writeFloat.Count;
+  writeFile.WriteOpen(IqDataFormat.Complex, nofArraysToWrite, "My R/S test application", "My comment for test application", channelInfo);
+
+  // you can add optional meta data as key-value pairs to the file, if supported by the file format (currently all formats but IQW)
+  IDictionary<string, string> metadata = new Dictionary<string, string>();
+  metadata.Add(new KeyValuePair<string, string>("Key", "Value"));
+  metadata.Add(new KeyValuePair<string, string>("Key2", "Value2"));
+  writeFile.WriteOpen(IqDataFormat.Complex, nofArraysToWrite, "My R/S test application", "My comment for test application", channelInfo, metadata);
+
+  for (int i = 0; i < 4; ++i)
+  {
+    // fill writeFloat with new data...
+    // and write data to file
+    writeFile.AppendArrays(writeFloat);
+  }
+
+  // When all data has been added, call close
+  writeFile.Close();
+}
+catch (DaiException e)
+{
+  // ...
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Channels are written in a similar fashion:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// note that nofArraysToWrite is 1 instead of 2, as only 1 list containing interleaved I/Q data of the channel
+// is passed instead of two lists of separate I and Q values.
+int nofArraysToWrite = 1;
+writeFile.WriteOpen(IqDataForm.Complex, nofArraysToWrite, "My R/S test application", "My comment for test application", channelInfo);
+
+IList<IList<float>> writeChannelFloat;
+// ...fill data ...
+// writeChannelFloat contains the data data of each channel per list element, e.g. IList<Channel1 values, Channel2 values, etc.>.
+// Complex-valued channels must contain I/Q data in interleaved format per channel, i.e. IQIQIQ.
+
+writeFile.AppendChannels(writeChannelFloat);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*/
