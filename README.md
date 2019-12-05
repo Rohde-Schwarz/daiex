@@ -48,7 +48,7 @@ The following operating systems are supported
 
 ## Open source acknowledgement
 
-This library uses the following modules. 
+This library uses the following modules.
 
 | Module | version | license | origin | copyright | comment |
 | ------ | ------- | ------- |------- | --------- | ------- |
@@ -71,7 +71,7 @@ We would like to thank the authors for their valuable work.
 |  3rdparty  | contains open source projects wihich are used by daiex lib |
 |  app       | an example app |
 |  cmake     | cmake modules  |
-|  lib       | the source directory of daiex lib. Contains also documentation and the OSA statment |
+|  lib       | the source directory of daiex lib. Contains also documentation |
 |  test      | test sources |
 |  wrapper   | .Net wrapper for daiex lib |
 |  wrapper_test | tests for the .Net wrapper |
