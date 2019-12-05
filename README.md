@@ -58,7 +58,7 @@ This library uses the following modules.
 | matio | 1.5.8 | BSD-2-Clause | https://github.com/tbeu/matio/releases/tag/v1.5.8 | Copyright (c) 2011-2016, Christopher C. Hulbert ||
 | Memory-Mapped File C++ | 2017-01-31 | MPL-2.0 | https://github.com/carlomilanesi/cpp-mmf | Copyright (c) 2014, Carlo Milanesi ||
 | PugiXml | 1.8  | MIT | https://github.com/zeux/pugixml | Copyright (C) 2006-2017, by Arseny Kapoulkine ||
-| Google C++ Testing Framework | 1.7.0 | BSD 3-Clause | http://code.google.com/p/googletest/ | ||
+| Google C++ Testing Framework | 1.7.0 | BSD 3-Clause | http://code.google.com/p/googletest/ |Copyright 2008, Google Inc. ||
 
 We would like to thank the authors for their valuable work.
 
