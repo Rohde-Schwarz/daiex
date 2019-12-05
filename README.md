@@ -1,6 +1,6 @@
-# Data Import Export library (daiex)
+# I/Q Data Import Export library (daiex)
 
-is a cross-platform c++ library that provides functions to import and export numeric I/Q data to or from various file formats.
+is a cross-platform C++ library that provides functions to import and export numeric I/Q data to or from various file formats.
 
 Two groups of file format are considered:
 - special binary formats that contain I/Q data, as used by various instruments, for instance iq-tar.
@@ -46,10 +46,22 @@ The following operating systems are supported
 | Windows | tested on Windows 10 with Visual Studio 2017
 | macOS | tested on Mojave 10.14.4. There are still some problems with .mat files.|
 
-## OSA
+## Open source acknowledgement
 
-This library uses a lot of open source packages. We would like to thank the authors for their valuable work.
-A list of all used packages is located in lib/doc/Inventory.xml.
+This library uses the following modules. 
+
+| Module | version | license | origin | copyright | comment |
+| ------ | ------- | ------- |------- | --------- | ------- |
+| zlib   | 1.2.11  | Zlib    | http://zlib.net/zlib-1.2.11.tar.gz | Copyright (c) 1995-2013 Jean-loup Gailly and Mark Adler | added two files in devpackage and changed cmakelist.txt for find_package |
+| libarchive | 3.1.2 | BSD-2-Clause | http://www.libarchive.org/downloads/libarchive-3.2.1.tar.gz | Copyright (c) 2003-2009 Tim Kientzle | |
+| libhdf5 | 1.10.0-patch1 | HDF5 | https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar | Copyright 2006-2016 by The HDF Group. ||
+| matio | 1.5.8 | BSD-2-Clause | https://github.com/tbeu/matio/releases/tag/v1.5.8 | Copyright (c) 2011-2016, Christopher C. Hulbert ||
+| Memory-Mapped File C++ | 2017-01-31 | MPL-2.0 | https://github.com/carlomilanesi/cpp-mmf | Copyright (c) 2014, Carlo Milanesi ||
+| PugiXml | 1.8  | MIT | https://github.com/zeux/pugixml | Copyright (C) 2006-2017, by Arseny Kapoulkine ||
+| Google C++ Testing Framework | 1.7.0 | BSD 3-Clause | http://code.google.com/p/googletest/ | ||
+
+We would like to thank the authors for their valuable work.
+
 
 
 ## Directory structure
