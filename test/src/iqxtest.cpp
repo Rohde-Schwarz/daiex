@@ -113,6 +113,22 @@ string fileTypeCsv(string fileName)
 	return "CSV raw";
 }
 
+#if 0
+TEST_F(IqxTest, muchTriggers)
+{
+
+  const string inIqxStr = "D:/iqwfiles/336569e6-f8f2-4eab-b9e0-382e0123ae1a.iqx";
+  Iqx inIqx(inIqxStr);
+
+  vector<string> arrayNames;
+  int ret = inIqx.readOpen(arrayNames);
+  EXPECT_EQ(ErrorCodes::Success, ret) << "file open failed";
+  vector<ChannelInfo> channels;
+  map<string, string> metadata;
+  int ret2 = inIqx.getMetadata(channels, metadata);
+  EXPECT_EQ(ErrorCodes::Success, ret) << "get metadata failed";
+}
+#endif
 
 #if 0
 TEST_F(IqxTest, ihaveCueAndTrigger)

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Inventory xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="Inventory.xsd">
   <Header>
-    <Productname>LibDataImportExport 1.0.17</Productname>
+    <Productname>LibDataImportExport 1.0.18</Productname>
     <Responsible>Rohde &amp Schwarz</Responsible>
     <Division>Test &amp; Measurement</Division>
     <Producttype></Producttype>

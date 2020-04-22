@@ -15,8 +15,8 @@
 
 #define VERMAJOR 1
 #define VERMINOR 0
-#define VERBUILD 17
-#define FILEVER "1.0.17\0"
+#define VERBUILD 18
+#define FILEVER "1.0.18\0"
 
 
 /*** @endcond ***/

@@ -177,10 +177,14 @@ void MosaikIqxImpl::assembleIqxMetaData()
     vector<IqxTriggerEntry> triggers = m_piqx->getTriggers(i);
     if (triggers.size() > 0)
     {
+      const int MaxTrig = 3600;
+      int maxTrig = 0;
       string key = "Ch" + to_string(i + 1) + "_MarkerInfo[XML]";
-      string value = "<ArrayOfEvents length = \"" + std::to_string(triggers.size()) + "\">\n";
+      string value = "<ArrayOfEvents length = \"" + std::to_string(min(triggers.size(), MaxTrig)) + "\">\n";
       for (const auto &trigger : triggers)
       {
+        maxTrig++;
+        if (maxTrig > MaxTrig) break;
         value = value + "<Event>\n";
         string t = "";
         switch (trigger.type)

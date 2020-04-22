@@ -183,6 +183,53 @@ class CsvChannelTest : public ::testing::Test
 {
 };
 
+// --- 
+TEST_F(CsvTest, TestReal)
+{
+#if 1
+  const string filename = Common::TestOutputDir + "TestReal.csv";
+  vector<ChannelInfo> channelInfos;
+  channelInfos.push_back(ChannelInfo("Channel1", 1E6, 2E7));
+
+  IqCsv file(filename);
+
+  map<string, string> metadata;
+  metadata["Test Meta"] = "Test Meta Value";
+  auto ret = file.writeOpen(IqDataFormat::Real, 1, "test real", "imag is 0", channelInfos);
+  ASSERT_EQ(ret, ErrorCodes::Success);
+  vector<vector<float>> iqValues;
+  Common::initVector(iqValues, 1, 5);
+  vector<size_t> sizes;
+  ret = file.appendChannels(iqValues);
+  ASSERT_EQ(ret, ErrorCodes::Success);
+  ret = file.close();
+  ASSERT_EQ(ret, ErrorCodes::Success);
+
+  IqCsv readfile(filename);
+  vector<string> arrayNames;
+  ret = readfile.readOpen(arrayNames);
+  ASSERT_EQ(ret, ErrorCodes::Success);
+  ASSERT_EQ(arrayNames.size(), 1);
+
+  vector<ChannelInfo> channelInfosRead;
+  map<string, string> metadataRead;
+  ret = readfile.getMetadata(channelInfosRead, metadataRead);
+  ASSERT_EQ(ret, ErrorCodes::Success);
+  ASSERT_EQ(channelInfos.size(), channelInfosRead.size());
+
+  auto size = readfile.getArraySize("Channel1");
+  vector<float> readValues(size);
+
+  // comare values
+  ret = readfile.readChannel("Channel1", readValues, size);
+  ASSERT_EQ(ret, ErrorCodes::Success);
+  Common::almostEqual(iqValues[0], readValues);
+
+  //remove(filename.c_str());
+#endif
+}
+
+
 TEST_F(CsvFormatSpecifierTest, removeAdditionalSemicolons)
 {
 #if 0

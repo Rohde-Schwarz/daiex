@@ -58,10 +58,10 @@ This library uses the following modules.
 | matio | 1.5.8 | BSD-2-Clause | https://github.com/tbeu/matio/releases/tag/v1.5.8 | Copyright (c) 2011-2016, Christopher C. Hulbert ||
 | Memory-Mapped File C++ | 2017-01-31 | MPL-2.0 | https://github.com/carlomilanesi/cpp-mmf | Copyright (c) 2014, Carlo Milanesi ||
 | PugiXml | 1.8  | MIT | https://github.com/zeux/pugixml | Copyright (C) 2006-2017, by Arseny Kapoulkine ||
-| Google C++ Testing Framework | 1.7.0 | BSD 3-Clause | http://code.google.com/p/googletest/ |Copyright 2008, Google Inc. ||
+| Google C++ Testing Framework | 1.7.0 | BSD 3-Clause | http://code.google.com/p/googletest/ | Copyright 2008, Google Inc. ||
 
-We would like to thank the authors for their valuable work.
-
+This library uses a lot of open source packages. We would like to thank the authors for their valuable work.
+A list of all used packages is located in lib/doc/Inventory.xml.
 
 
 ## Directory structure
@@ -109,6 +109,7 @@ Clone this repository to your local hard disc.
 ### Windows (Visual Studio 2017 64)
 * make sure that you have Visual Studio 2017 64 installed.
 * download and install nunit 2.x and doxygen from the www.
+* and also download the html help workshop, which generates a chm file.
 * download and build zlib:
    - unpack zlib from 3rdparty directory to your  hard disc and change into the unpacked directory
    - mkdir build
@@ -124,6 +125,7 @@ Clone this repository to your local hard disc.
 
 Create a package, which includes all files you need to use daiex
 * cmake --build . --config Release --target package
+If you have not downloaded and installed the HTML help workshop from Microsoft, you will get a strange error (setlocale).
 
 
 ### macOS (Mojave 10.14.4)
