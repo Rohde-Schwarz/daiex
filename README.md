@@ -347,7 +347,7 @@ The LibDataImportExport library provides a .NET Wrapper for the native c++ dll, 
 
 ## Other I/Q tools
 
-The R&S® IQ File Cutter can load I/Q data from support I/Q file formats and export part of the signal to another file.
+The R&S® IQ File Cutter can load I/Q data from supported I/Q file formats and export part of the signal to another file.
 https://www.rohde-schwarz.com/appnote/GFM338
 
 ## License
