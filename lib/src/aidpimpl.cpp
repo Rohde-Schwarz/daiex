@@ -125,8 +125,23 @@ int AidImpl::writeOpen(IqDataFormat format, size_t nofArrays, const std::string&
   m_writer.setTimestamp(m_timeStamp);
   m_writer.setCenterFrequency((uint64_t)channelInfos[0].getFrequency());
   m_writer.setSampleRate((uint32_t)channelInfos[0].getClockRate());
-  m_writer.setDatablockSettings(100000u, 1u);
+  m_writer.setDatablockSettings(131072u, 1u);
   //m_writer.setFrameType(ekFRH_DATASTREAM__IFDATA_32RE_32IM_FLOAT_RESCALED);
+
+  // look for Bandwith in Meta data: "Ch1_MeasBandwidth[Hz]"
+  if (metadata->count("Ch1_MeasBandwidth[Hz]"))
+  {
+    try
+    {
+      int bw = std::stoul(metadata->at("Ch1_MeasBandwidth[Hz]"));
+      m_writer.setBandwidth(bw);
+    }
+    catch (...)
+    {
+
+    }
+  }
+
 
   m_writer.setFilename(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_filename));
   status = m_writer.open();

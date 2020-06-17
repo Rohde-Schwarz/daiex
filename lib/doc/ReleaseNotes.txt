@@ -5,7 +5,7 @@
 Release Notes for Mosaik Module LibDataImportExport
 -------------------------------------------------------------------------------
 
-Release 1.0.18 (2020-04-21) @n
+Release 1.0.19 (2020-06-17) @n
 Lines of Code    @b 0  @n
 
 
@@ -16,6 +16,13 @@ C O N T E N T S
 
 1. Release Notes
 -------------------------------------------------------------------------------
+Release 1.0.19 (2020-06-17)
+--------------------------
+- Added: write aid file: when a metadata "Ch1_MeasBandwidth[Hz]" exists it is used 
+  as bandwith in writer class.
+- Fixed: aid: framesize is now a power of 2   
+
+
 Release 1.0.18 (2020-04-21)
 --------------------------
 - Fixed: iqx: convert only the first 3600 triggers to meta data, when opening a file

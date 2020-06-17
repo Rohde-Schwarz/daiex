@@ -74,6 +74,8 @@ TEST_F(AidTest, writeAndReadTest)
   channels.emplace_back(ChannelInfo("Channel1", 2000000,10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
+
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "app name", "comment", channels, &metadata));
   vector<float *> iqdata;
   iqdata.push_back(l_pfReal);
@@ -130,6 +132,7 @@ TEST_F(AidTest, appendArrayFloatPointer)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendArrayFloatPointer", "comment", channels, &metadata));
 
   ASSERT_EQ(0, aid.appendArrays(iqdata, sizes));
@@ -160,6 +163,7 @@ TEST_F(AidTest, appendArrayDoublePointer)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendArrayDoublePointer", "comment", channels, &metadata));
 
   ASSERT_EQ(0, aid.appendArrays(iqdata, sizes));
@@ -188,6 +192,7 @@ TEST_F(AidTest, appendArrayFloatVector)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendArrayFloatVector", "comment", channels, &metadata));
   ASSERT_EQ(0, aid.appendArrays(writeVector));
   ASSERT_EQ(0, aid.close());
@@ -212,6 +217,7 @@ TEST_F(AidTest, appendArrayDoubleVector)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendArrayDoubleVector", "comment", channels, &metadata));
   ASSERT_EQ(0, aid.appendArrays(writeVector));
   ASSERT_EQ(0, aid.close());
@@ -256,6 +262,11 @@ TEST_F(AidTest, readArrayDoublePointer)
   vector<ChannelInfo> channels;
   map<string, string> metadata;
   ASSERT_EQ(0, aid.getMetadata(channels, metadata));
+  if (metadata.count("Ch1_MeasBandwidth[Hz]"))
+  {
+    ASSERT_TRUE(metadata["Ch1_MeasBandwidth[Hz]"] == "1600000");
+  }
+
   ASSERT_NE(channels.size(), 0);
   ASSERT_EQ(0, aid.readArray(channels[0].getChannelName() + "_I", iVector, channels[0].getSamples()));
   ASSERT_EQ(0, aid.readArray(channels[0].getChannelName() + "_Q", qVector, channels[0].getSamples()));
@@ -335,6 +346,7 @@ TEST_F(AidTest, appendChannelFloatPointer)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendChannelFloatPointer", "comment", channels, &metadata));
 
   ASSERT_EQ(0, aid.appendChannels(iqdata, sizes));
@@ -361,6 +373,7 @@ TEST_F(AidTest, appendChannelDoublePointer)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendChannelDoublePointer", "comment", channels, &metadata));
 
   ASSERT_EQ(0, aid.appendChannels(iqdata, sizes));
@@ -384,6 +397,7 @@ TEST_F(AidTest, appendChannelFloatVector)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendChannelFloatVector", "comment", channels, &metadata));
 
   ASSERT_EQ(0, aid.appendChannels(iqdata));
@@ -405,6 +419,7 @@ TEST_F(AidTest, appendChannelDoubleVector)
   channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
   map<string, string> metadata;
   metadata["Test"] = "Test";
+  metadata["Ch1_MeasBandwidth[Hz]"] = "1600000";
   ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendChannelDoubleVector", "comment", channels, &metadata));
 
   ASSERT_EQ(0, aid.appendChannels(iqdata));

@@ -345,11 +345,6 @@ If you use the library with Windows, you have to include windows.h, otherwise yo
 ## .NET Wrapper
 The LibDataImportExport library provides a .NET Wrapper for the native c++ dll, in order to make the functionallity of LibDataImportExport usable in managed projects. An installation of the .NET Framework is required on the target machine. For details on how to use the wrapper classes, please refer to the Doxygen documentation.
 
-## Other I/Q tools
-
-The R&S® IQ File Cutter can load I/Q data from supported I/Q file formats and export part of the signal to another file.
-https://www.rohde-schwarz.com/appnote/GFM338
-
 ## License
 
 The daiex library is licensed under the Apache 2.0 license. For more information see license.txt
