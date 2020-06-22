@@ -77,6 +77,17 @@ int MosaikIqxImpl::readOpen(std::vector<std::string>& arrayNames)
     arrayNames.clear();
     m_piqx = unique_ptr<IqxFile>(new IqxFile(m_filename));
     arrayNames = m_piqx->getStreamSources();
+    // remove GPS if exists, because mosaik does only support IQ channels
+    for (int i = arrayNames.size() - 1; i >= 0; i--)
+    {
+      //if (m_piqx->getStreamType(m_piqx->getStreamNo(arrayNames[i])) == IQX_STREAM_TYPE_GEOLOC)
+      if (m_piqx->getStreamType(i) == IQX_STREAM_TYPE_GEOLOC)
+      {
+        arrayNames.erase(arrayNames.begin() + i);
+      }
+    }
+    m_nofArrays = arrayNames.size();
+
     assembleIqxMetaData();
   }
   catch (const iqxformat_error&)
@@ -114,12 +125,24 @@ void MosaikIqxImpl::assembleIqxMetaData()
   m_applicationName = m_piqx->getDescriptionName();
 
   //m_metaData.emplace("duration", to_string(m_piqx->getDuration()));
-  m_metaData.emplace("tags", accumulate(tags.begin(), tags.end(), string("")));
+  string tagsstr = "";
+  for (auto &t : tags)
+  {
+    if (tagsstr == "") tagsstr = t;
+    else tagsstr = tagsstr + "," + t;
+  }
+  m_metaData.emplace("tags", tagsstr);
   m_metaData.emplace("comments", comments);
-  m_metaData.emplace("sources", accumulate(sources.begin(), sources.end(), string("")));
+  string sourcesstr = "";
+  for (auto &s : sources)
+  {
+    if (sourcesstr == "") sourcesstr = s;
+    else sourcesstr = sourcesstr + "," + s;
+  }
+  m_metaData.emplace("sources", sourcesstr);
   m_metaData.emplace("ApplicationName", m_applicationName);
 
-  size_t nStreams = m_piqx->getNumberOfStreams();
+  size_t nStreams = m_nofArrays; // (GPS possible) m_piqx->getNumberOfStreams();
   for (size_t i = 0; i < nStreams; ++i)
   {
 	  auto iqprops = m_piqx->getIqStreamParameters(m_piqx->getStreamSource(i));

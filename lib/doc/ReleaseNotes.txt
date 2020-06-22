@@ -5,7 +5,7 @@
 Release Notes for Mosaik Module LibDataImportExport
 -------------------------------------------------------------------------------
 
-Release 1.0.19 (2020-06-17) @n
+Release 1.0.20 (2020-06-22) @n
 Lines of Code    @b 0  @n
 
 
@@ -16,6 +16,10 @@ C O N T E N T S
 
 1. Release Notes
 -------------------------------------------------------------------------------
+Release 1.0.20 (2020-06-22)
+--------------------------
+-Fixed: iqx: opening a file with additional GPS data throwed an error
+
 Release 1.0.19 (2020-06-17)
 --------------------------
 - Added: write aid file: when a metadata "Ch1_MeasBandwidth[Hz]" exists it is used 

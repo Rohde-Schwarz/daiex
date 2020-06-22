@@ -215,7 +215,7 @@ If you want to change parameters that affect the read or write behaviour of the 
     returnCode = readFile.setDataOrder(IqDataOrder::IQIQIQ);
     returnCode = readFile.readOpen(arrayNames);
 
-In a similar fasion, the preview of I/Q data for the IqTar file format can be disabled using
+In a similar fashion, the preview of I/Q data for the IqTar file format can be disabled using
 
     IqTar writeFile(filename);
     returnCode = writeFile.setPreviewEnabled(false);

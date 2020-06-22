@@ -114,6 +114,36 @@ string fileTypeCsv(string fileName)
 }
 
 #if 0
+TEST_F(IqxTest, withGps)
+{
+
+  const string inIqxStr = "d:/iqwfiles/6121b040-f8a6-40e6-9c66-e421ac0d6864.iqx";
+  Iqx inIqx(inIqxStr);
+
+  vector<string> arrayNames;
+  int ret = inIqx.readOpen(arrayNames);
+  EXPECT_EQ(ErrorCodes::Success, ret) << "file open failed";
+  vector<ChannelInfo> channels;
+  map<string, string> metadata;
+  int ret2 = inIqx.getMetadata(channels, metadata);
+  EXPECT_EQ(ErrorCodes::Success, ret) << "get metadata failed";
+  vector<float> values1;
+  vector<float> values2;
+  size_t samples = channels[0].getSamples();
+  std::cout << samples << " Samples\n";
+  const size_t no = 10000;
+  for (size_t i = 0; i < samples - no; i += samples / 100)
+  {
+    std::cout << "read " << no << " at " << i << "\n";
+    ret = inIqx.readArray(channels[0].getChannelName() + "_I", values1, no, i);
+    EXPECT_EQ(ErrorCodes::Success, ret) << "read failed";
+    ret = inIqx.readArray(channels[0].getChannelName() + "_Q", values2, no, i);
+    EXPECT_EQ(ErrorCodes::Success, ret) << "read failed";
+  }
+}
+#endif
+
+#if 0
 TEST_F(IqxTest, muchTriggers)
 {
 
