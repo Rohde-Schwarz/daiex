@@ -122,7 +122,8 @@ int AidImpl::writeOpen(IqDataFormat format, size_t nofArrays, const std::string&
     return status;
   }
   m_write = true;
-  m_writer.setTimestamp(m_timeStamp);
+  time_t writeTime = (m_timeStamp == 0) ? time(0) : m_timeStamp;
+  m_writer.setTimestamp(writeTime);
   m_writer.setCenterFrequency((uint64_t)channelInfos[0].getFrequency());
   m_writer.setSampleRate((uint32_t)channelInfos[0].getClockRate());
   m_writer.setDatablockSettings(131072u, 1u);
