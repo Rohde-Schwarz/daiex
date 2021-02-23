@@ -147,9 +147,10 @@ ENDIF()
 
 ### installer ###
 
-IF( WIN32 )
+#IF( WIN32 )
   install( TARGETS daiex 
     RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
 
   install( FILES 
@@ -174,12 +175,12 @@ IF( WIN32 )
     include/channelinfo.h
     include/settings.h
     DESTINATION include)
-
+IF( WIN32 )
   if( ${CMAKE_BUILD_TYPE} MATCHES "Debug" )
     install( FILES ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.pdb DESTINATION bin )
   endif()
-
   install( FILES ${CMAKE_BINARY_DIR}/lib/doc/gen/LibDataImportExport.chm DESTINATION doc )
+ENDIF()
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory.xml DESTINATION doc )
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory.xsd DESTINATION doc )
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory_readme.txt DESTINATION doc )
@@ -190,4 +191,4 @@ IF( WIN32 )
   install( FILES ${CMAKE_SOURCE_DIR}/3rdparty/mmf/memory_mapped_file.hpp DESTINATION doc/contrib/mmf )
   install( FILES ${CMAKE_SOURCE_DIR}/3rdparty/mmf/LICENSE.md DESTINATION doc/contrib/mmf )
   install( FILES ${CMAKE_SOURCE_DIR}/3rdparty/mmf/README.md DESTINATION doc/contrib/mmf )
-ENDIF()
+#ENDIF()

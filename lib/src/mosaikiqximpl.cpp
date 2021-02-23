@@ -200,7 +200,7 @@ void MosaikIqxImpl::assembleIqxMetaData()
     vector<IqxTriggerEntry> triggers = m_piqx->getTriggers(i);
     if (triggers.size() > 0)
     {
-      const int MaxTrig = 3600;
+      const size_t MaxTrig = 3600;
       int maxTrig = 0;
       string key = "Ch" + to_string(i + 1) + "_MarkerInfo[XML]";
       string value = "<ArrayOfEvents length = \"" + std::to_string(min(triggers.size(), MaxTrig)) + "\">\n";
@@ -598,7 +598,7 @@ int MosaikIqxImpl::readArrayAll(const std::string& arrayName, std::vector<float>
       return ErrorCodes::InternalError;
     }
 
-    for (int64_t value = isI?0:1  /*firstValue*/; value < size  /*lastValue*/; value = value + 2)
+    for (size_t value = isI?0:1  /*firstValue*/; value < size  /*lastValue*/; value = value + 2)
     {
       // convert and copy
       switch (rw)
@@ -864,7 +864,7 @@ int MosaikIqxImpl::readChannelAll(const std::string& channelName, std::vector<fl
       return ErrorCodes::InternalError;
     }
     
-    for (int64_t value = 0; value < size; value++)
+    for (size_t value = 0; value < size; value++)
     {
       // convert and copy
       switch (rw)

@@ -298,16 +298,16 @@ namespace rohdeschwarz
 					break;
 				}
 
-        unsigned int samples = (unsigned int) (nofValues + offset);
+            unsigned int samples = (unsigned int) (nofValues);
 				if (samples > m_samples)
 				{
 					return 1;
 				}
 				unique_ptr<unsigned int[]> databuffer(new unsigned int[samples]);
-				m_wv.ReadSamples(samples, databuffer.get());
+				m_wv.ReadSamples(offset, samples, databuffer.get());
 				int16_t *data = (int16_t *)databuffer.get();
 
-				size_t readBegin8 = offset * 4;
+				size_t readBegin8 = 0;
 				bool isI = arrayName.find("_I", arrayName.size() - 2) != string::npos;
 				if (!isI)
 				{
@@ -395,15 +395,15 @@ namespace rohdeschwarz
 					vdValues.reserve(nofValues * 2);
 				}
 
-				size_t readBegin8 = offset * 4;
+				size_t readBegin8 = 0;
 
 				//                             Q              IQ = 4 Byte
 				size_t readEnd8 = readBegin8 + 2 + (nofValues - 1) * 4;
 
-				size_t symbols = nofValues + offset;
+				size_t symbols = nofValues;
 				unique_ptr<unsigned int[]> databuffer(new unsigned int[symbols]);
 
-				m_wv.ReadSamples((unsigned int)symbols, databuffer.get());
+				m_wv.ReadSamples((unsigned int)offset, (unsigned int)symbols, databuffer.get());
 				int16_t *data = (int16_t *) databuffer.get();
 
 				switch (rw)

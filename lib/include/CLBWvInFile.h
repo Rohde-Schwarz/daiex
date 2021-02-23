@@ -217,6 +217,8 @@ public:
     ******************************************************************************/
     int ReadSamples(unsigned int uNoSamples, unsigned int *pBuffer);
 
+    // new version with random access
+    int ReadSamples(unsigned int uOffset, unsigned int uNoSamples, unsigned int *pBuffer);
 
     /* FUNCTION ******************************************************************/
     /**

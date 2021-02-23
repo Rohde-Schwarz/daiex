@@ -16,7 +16,7 @@ using namespace System::Security::Permissions;
 [assembly:AssemblyConfigurationAttribute("")];
 [assembly:AssemblyCompanyAttribute("Rohde & Schwarz")];
 [assembly:AssemblyProductAttribute("LibDataImportExport Wrapper")];
-[assembly:AssemblyCopyrightAttribute("Copyright (C) Rohde & Schwarz 2016")];
+[assembly:AssemblyCopyrightAttribute("Copyright (C) Rohde & Schwarz 2020")];
 [assembly:AssemblyTrademarkAttribute("")];
 [assembly:AssemblyCultureAttribute("")];
 

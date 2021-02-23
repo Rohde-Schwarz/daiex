@@ -113,6 +113,35 @@ TEST_F(AidTest, writeAndReadTest)
 
 TEST_F(AidTest, appendArrayFloatPointer)
 {
+	for (int runs = 1; runs < 5; runs++)
+	{
+		Aid aid(Common::TestOutputDir + "appendArrayFloatPointer.aid");
+		float * iVector = new float[MB];
+		float * qVector = new float[MB];
+		for (size_t i = 0; i < MB; i++)
+		{
+			iVector[i] = i;
+			qVector[i] = iVector[i] * -1;
+		}
+		vector<float *> iqdata;
+		iqdata.push_back(iVector);
+		iqdata.push_back(qVector);
+		vector<size_t> sizes;
+		sizes.push_back(MB);
+		sizes.push_back(MB);
+
+		vector<ChannelInfo> channels;
+		channels.emplace_back(ChannelInfo("Channel1", 2000000, 10000000));
+		map<string, string> metadata;
+		metadata["Test"] = "Test";
+		ASSERT_EQ(0, aid.writeOpen(IqDataFormat::Complex, 1, "appendArrayFloatPointer", "comment", channels, &metadata));
+
+		ASSERT_EQ(0, aid.appendArrays(iqdata, sizes));
+		ASSERT_EQ(0, aid.close());
+
+		delete[] iVector;
+		delete[] qVector;
+	}
   Aid aid(Common::TestOutputDir + "appendArrayFloatPointer.aid");
   float * iVector = new float[MB];
   float * qVector = new float[MB];

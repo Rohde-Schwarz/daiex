@@ -5,7 +5,7 @@
 Release Notes for Mosaik Module LibDataImportExport
 -------------------------------------------------------------------------------
 
-Release 1.0.20 (2020-06-22) @n
+Release 1.0.22 (2020-10-18) @n
 Lines of Code    @b 0  @n
 
 
@@ -16,6 +16,16 @@ C O N T E N T S
 
 1. Release Notes
 -------------------------------------------------------------------------------
+Release 1.0.22 (2020-10-18)
+--------------------------
+-Fixed: Error when reading scrambled wv files
+
+Release 1.0.21 (2020-09-07)
+--------------------------
+-Fixed: fixed linux compile error
+-Fixed: aid: set time to current time, when not set 
+-Added: create package for linux
+
 Release 1.0.20 (2020-06-22)
 --------------------------
 -Fixed: iqx: opening a file with additional GPS data throwed an error

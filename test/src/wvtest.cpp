@@ -10,7 +10,7 @@
 #include <fstream>
 #include <memory>
 #ifdef HAS_SCRAMBLER
-#include "E:/wvtst/app/WvScrambler.h"
+#include "d:/wvscrambler/WvScrambler.h"
 #endif
 
 
@@ -56,14 +56,11 @@ TEST_F(WvTest, TestMultipleOpen)
 
 TEST_F(WvTest, TestChannel)
 {
-	//const string inFile = Common::TestOutputDir + "FG_Sine_1MHz_080deg.wv";
-	//const string inFile = Common::TestOutputDir + "QPSK_BurstsDown.wv";
 #ifdef HAS_SCRAMBLER
-	const string inFile = Common::TestOutputDir + "LTE_TDD_10MHz_MinMaxPowerv05.wv";
-	//const string inFile = Common::TestOutputDir + "PowStepsMSeg.wv";
-	const string outFile = Common::TestOutputDir + "LTE_TDD_10MHz_MinMaxPowerv05.iq.tar";
+	const string inFile = Common::TestOutputDir + "MyTestFile.wv";
+	const string outFile = Common::TestOutputDir + "MyTestFile.iq.tar";
 #else
-  const string inFile = Common::TestDataDir + "FG_Sine_0.35MHz.wv";
+   const string inFile = Common::TestDataDir + "FG_Sine_0.35MHz.wv";
 	const string outFile = Common::TestOutputDir + "FG_Sine_0.35MHz.iq.tar";
 #endif
 
@@ -75,7 +72,8 @@ TEST_F(WvTest, TestChannel)
 	vector<string> channelNames;
 	int ret = wv.readOpen(channelNames);
 	EXPECT_EQ(ErrorCodes::Success, ret) << "file open failed";
-	size_t size = wv.getArraySize(channelNames[0]);
+   size_t size = 512 * 1024;//wv.getArraySize(channelNames[0]);
+   if (size > wv.getArraySize(channelNames[0])) size = wv.getArraySize(channelNames[0]);
 	vector<ChannelInfo> channelInfos;
 	map<string, string> metadata;
 	ret = wv.getMetadata(channelInfos, metadata);
@@ -120,16 +118,27 @@ TEST_F(WvTest, TestChannel)
 			}
 		}
 	}
-	wv.close();
+	//wv.close();
 
 	// write as iq tar file
 	IqTar iqtar(outFile);
 	ret = iqtar.writeOpen(IqDataFormat::Complex, 1, "wv to iqtar conversion", inFile.c_str(), channelInfos, &metadata);
 	ASSERT_EQ(ret, ErrorCodes::Success);
 	vector<vector<float>> channels;
-	channels.push_back(valuesFV);
-	ret = iqtar.appendChannels(channels);
-	iqtar.close();
+   size = wv.getArraySize(channelNames[0])/2;
+   vector<float> allValues;
+   allValues.reserve(wv.getArraySize(channelNames[0]));
+
+   for (int i = 0; i < 2; i++)
+   {
+      //valuesFV.clear();
+      ret = wv.readChannel(channelNames[0], valuesFV, size, i*size);
+      allValues.insert(allValues.end(), valuesFV.begin(), valuesFV.end());
+   }
+   channels.push_back(allValues);
+   ret = iqtar.appendChannels(channels);
+   wv.close();
+   iqtar.close();
 }
 
 TEST_F(WvTest, TestArray)

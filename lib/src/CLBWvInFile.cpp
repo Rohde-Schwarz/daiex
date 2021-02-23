@@ -1063,9 +1063,67 @@ int CLBWvInFile::Close()
     return(0);
 }
 
+int CLBWvInFile::ReadSamples(unsigned int uOffset, unsigned int uNoSamples, unsigned int *pBuffer)
+{
+   if (!m_bFileIsOpen || m_pFile == NULL || m_pBufferStart == NULL)
+   {
+      return(10);
+   }
+   if (m_ullSamples < uOffset + uNoSamples)
+   {
+      return(11);
+   }
+
+   if (!m_bScramble) 
+   {  
+      // seek to begin of symbol data plus offset
+      fseek(m_pFile, m_iHeaderBytes + uOffset * 4, SEEK_SET);
+      // read directly into buffer from caller
+      if (fread(pBuffer, 4, uNoSamples, m_pFile) != uNoSamples)
+      {
+         Close();
+         return(12);
+      }
+      return 0;
+   }
+   // scamble
+   if (!m_scramblerSet)
+   {
+      Close();
+      return(13);
+   }
+   // seek to begin of symbol data
+   fseek(m_pFile, m_iHeaderBytes, SEEK_SET);
+   // reset scrambler to begin of file
+   m_scrambler->reload();
+   // "skip" offset
+   unsigned int remainOffset = uOffset;
+   while (remainOffset > 0)
+   {
+      unsigned int samples2read = remainOffset > (unsigned int)(m_iBufferSize/4) ? (m_iBufferSize/4) : remainOffset;
+      if (fread(m_pReadBuffer, 4, samples2read, m_pFile) != samples2read)
+      {
+         Close();
+         return(12);
+      }
+      // and descramble them
+      m_scrambler->descrambleNext((unsigned int *)m_pReadBuffer, samples2read);
+      remainOffset -= samples2read;
+   }
+   // read desired samples directly into callers buffer
+   if (fread(pBuffer, 4, uNoSamples, m_pFile) != uNoSamples)
+   {
+      Close();
+      return(12);
+   }
+   // and descramble them
+   m_scrambler->descrambleNext(pBuffer, uNoSamples);
+   return 0;
+}
+
 int CLBWvInFile::ReadSamples(unsigned int uNoSamples, unsigned int *pBuffer)
 {
-    if(!m_bFileIsOpen || m_pFile==NULL || m_pBufferStart==NULL)
+    if (!m_bFileIsOpen || m_pFile == NULL || m_pBufferStart == NULL)
         return(10);
 
     if(uNoSamples <= (unsigned int)m_iNoSamplesInBuffer)

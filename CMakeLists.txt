@@ -58,21 +58,29 @@ IF( WIN32 )
 
   file( STRINGS "${CMAKE_CURRENT_LIST_DIR}/Version.txt" VERSION )
 
-  set( GENERATOR "" )
-  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 11" )
-    set( GENERATOR "vs11" )
-    set (PLATFORMTOOLSET "v110")
-  endif()
-  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 12" )
-    set( GENERATOR "vs12" )
-    set (PLATFORMTOOLSET "v120")
-  endif()
   if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 15" )
     set( GENERATOR "vs15" )
     set (PLATFORMTOOLSET "v141")
   endif()
+  set( GENERATOR "vs15" )
+  set (PLATFORMTOOLSET "v141")
 
   set( CPACK_PACKAGE_FILE_NAME "LibDataImportExport-${VERSION}-${GENERATOR}-${PLATFORM}-${CMAKE_BUILD_TYPE}" )
 
+  include( CPack )
+ELSE()
+  set( CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+  set( CPACK_GENERATOR "TGZ" )
+  set( CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF )
+
+  set( PLATFORM "x86" )
+  if( ${CMAKE_GENERATOR} MATCHES "Win64" )
+    set( PLATFORM "amd64" )
+  endif()
+
+  file( STRINGS "${CMAKE_CURRENT_LIST_DIR}/Version.txt" VERSION )
+
+  set( GENERATOR "ubu18-04" )
+  set( CPACK_PACKAGE_FILE_NAME "LibDataImportExport-${VERSION}-${GENERATOR}-${PLATFORM}-${CMAKE_BUILD_TYPE}" )
   include( CPack )
 ENDIF()
