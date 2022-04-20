@@ -58,6 +58,7 @@ public:
         eParamClock,
         eParamLevelOffset,
         eParamComment,
+        eParamRfRmsLevel,
         eParamDate,
         eParamCopyRight,
         eParamMSegSettingsFile,

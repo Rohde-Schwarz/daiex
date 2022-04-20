@@ -77,8 +77,8 @@ namespace rohdeschwarz
         types.push_back(FileType::Csv);
         types.push_back(FileType::Matlab4);
         types.push_back(FileType::Matlab73);
-	      types.push_back(FileType::IQX);
-	      types.push_back(FileType::WV);
+	     types.push_back(FileType::IQX);
+	     types.push_back(FileType::WV);
         types.push_back(FileType::AID);
 
         return types;

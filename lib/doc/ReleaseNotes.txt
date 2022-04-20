@@ -5,7 +5,7 @@
 Release Notes for Mosaik Module LibDataImportExport
 -------------------------------------------------------------------------------
 
-Release 1.0.22 (2020-10-18) @n
+Release 1.0.32 (2022-04-04) @n
 Lines of Code    @b 0  @n
 
 
@@ -16,6 +16,23 @@ C O N T E N T S
 
 1. Release Notes
 -------------------------------------------------------------------------------
+Release 1.0.32 (2022-04-04)
+--------------------------
+-Added: reading of iqx 12 Bit Format
+
+Release 1.0.28 (2022-01-21)
+--------------------------
+-Added: scaling wv files by tag (Signal generated for SMx RMS level)
+-Fixed: set Center Freq to 0Hz for wv Files instead of 1000Hz
+
+Release 1.0.26 (2021-06-11)
+--------------------------
+-Fixed: added liblibmatio.so to linux delivery
+
+Release 1.0.24 (2021-04-19)
+--------------------------
+-Fixed: Always return ErrorCodes::FileOpenError when open write protected medium
+
 Release 1.0.22 (2020-10-18)
 --------------------------
 -Fixed: Error when reading scrambled wv files

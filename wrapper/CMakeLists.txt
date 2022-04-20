@@ -16,6 +16,10 @@
     set (PLATFORMTOOLSET "v141")
   endif()
 
+  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 16" )
+    set( GENERATOR "vs16" )
+    set (PLATFORMTOOLSET "v142")
+  endif()
 # message(STATUS "PLATFORMTOOLSET: " ${PLATFORMTOOLSET})
 
 
@@ -23,10 +27,7 @@ file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/wrapper )
 
 set( CONFIGURATION ${CMAKE_BUILD_TYPE} )
 
-set( PLATFORM Win32 )
-if( ${CMAKE_GENERATOR} MATCHES "Win64" )
-  set( PLATFORM x64 )
-endif()
+set( PLATFORM x64 )
 
 set( INC_DIR ${CMAKE_CURRENT_LIST_DIR}/include )
 set( SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src )

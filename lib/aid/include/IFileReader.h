@@ -17,6 +17,7 @@
 #ifndef IFILEREADER_H
 #define IFILEREADER_H
 
+#include <string>
 //lint -save -e451 -e537
 #include "Defines.h"
 //lint -restore

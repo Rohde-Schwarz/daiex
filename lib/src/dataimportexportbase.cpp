@@ -80,6 +80,10 @@ namespace rohdeschwarz
         const std::map<std::string, std::string>* /*metadata*/)
       {
         this->clearInternalState();
+        if (!Platform::isFileWriteable(this->filename_.c_str()))
+        {
+           return ErrorCodes::FileOpenError;
+        }
 
         // if file does already exists, try to delete it
         try

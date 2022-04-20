@@ -660,6 +660,31 @@ string openAndGetName(Iqx &inIqx)
 	return channels[0].getChannelName();
 }
 
+#if 0 // 12 Bit Test
+TEST_F(IqxTest, Test12Test)
+{
+	const string inputIqx12 = Common::TestOutputDir + "f1259e2a-25d7-4793-a0e9-d13f5f0374ac.iqx"; // tg100
+	//const string inputIqx12 = Common::TestOutputDir + "09386c4c-f860-43f9-a518-ed690063cc74.iqx"; // tg80
+   Iqx inIqx12(inputIqx12);
+   string chan12;
+   chan12 = openAndGetName(inIqx12);
+   vector<float> valuesIFV12;
+   int ret = inIqx12.readArray(chan12 + "_I", valuesIFV12, 20*KB, 0/*2*MB+1*/);
+
+   const string inputIqx16 = Common::TestOutputDir + "c001cb03-4110-4e88-9af6-3775f6820d88.iqx"; // tg100
+   //const string inputIqx16 = Common::TestOutputDir + "e9d99a47-7e35-40a0-9bbe-771d1d75731b.iqx"; // tg80
+   Iqx inIqx16(inputIqx16);
+   string chan16;
+   chan16 = openAndGetName(inIqx16);
+   vector<float> valuesIFV16;
+   ret = inIqx16.readArray(chan16 + "_I", valuesIFV16, 20 * KB, 0/*2 * MB + 1*/);
+
+	
+	vector<float> valuesIFV2;
+	ret = inIqx12.readChannel(chan12, valuesIFV2, 20 * KB, 2 * MB + 1);
+}
+#endif
+
 TEST_F(IqxTest, CompareAppendArrayFiles)
 {
 	const string inputIqxFV = Common::TestOutputDir + "AppendArraysFloatVector.iqx";

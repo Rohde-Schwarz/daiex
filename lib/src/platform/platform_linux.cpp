@@ -84,6 +84,41 @@ namespace rohdeschwarz
         return good;
       }
 
+      bool Platform::isFileWriteable(const std::string& filename)
+      {
+         // if file exists: remove
+         if (Platform::isFileAccessible(filename.c_str()))
+         {
+            // stop if file could not be deleted
+            if (0 != remove(filename.c_str()))
+            {
+               return false;
+            }
+         }
+         // create file
+         std::ofstream value(filename.c_str());
+         if (!value.good())
+         {
+            return false;
+         }
+         // close file
+         value.close();
+         if (!value.good())
+         {
+            return false;
+         }
+         // remove file
+         if (Platform::isFileAccessible(filename.c_str()))
+         {
+            // stop if file could not be deleted
+            if (0 != remove(filename.c_str()))
+            {
+               return false;
+            }
+         }
+         return true;
+      }
+
       void Platform::mmfOpen(memory_mapped_file::read_only_mmf& mmf, const std::string& filename, bool mapAll)
       {
         mmf.open(filename.c_str(), mapAll);

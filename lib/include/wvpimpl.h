@@ -158,7 +158,9 @@ namespace rohdeschwarz
 				CLBWvInFile m_wv;
 				unsigned int m_samples;
 				bool m_scrambled;
-				bool m_scramblerSet;
+				double m_scaleFactor{1.0};
+            double m_multiplicator{ 1.0 / INT16_MAX };
+            bool m_scramblerSet;
 				time_t m_timeStamp;
 			};
 

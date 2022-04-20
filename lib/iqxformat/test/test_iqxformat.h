@@ -4,6 +4,7 @@
 @copyright        (c) Rohde & Schwarz GmbH & Co. KG, Munich
 @version
 *
+@author
 @responsible
 *
 @language

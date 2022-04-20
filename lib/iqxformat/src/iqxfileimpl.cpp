@@ -1,24 +1,23 @@
 /*
-	* Copyright (c) Rohde & Schwarz
-	*
-	* Licensed under the Apache License, Version 2.0 (the "License");
-	* you may not use this file except in compliance with the License.
-	* You may obtain a copy of the License at
-	*
-	*     http://www.apache.org/licenses/LICENSE-2.0
-	*
-	* Unless required by applicable law or agreed to in writing, software
-	* distributed under the License is distributed on an "AS IS" BASIS,
-	* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	* See the License for the specific language governing permissions and
-	* limitations under the License.
+   * Copyright (c) Rohde & Schwarz
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *     http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
 */
-/*******************************************************************************/
 
 #include "iqxfileimpl.h"
 #ifdef __APPLE__
 #include "errno.h"
-#endif
+#endif	
 
 #include <cmath>
 #include <time.h>
@@ -57,7 +56,6 @@ bool IqxFileImpl::isIqxFile(const string& filename)
   {
     return false;
   }
-
   return true;
 }
 
@@ -80,10 +78,12 @@ IqxFileImpl::IqxFileImpl(int fd)
 
 void IqxFileImpl::initRead(bool edit)
 {
-  m_write = false;
+  m_write = false;  
   m_edit = edit;
   m_cueNoOfEntries = 0;
   m_trigNoOfEntries = 0;
+  m_overrunNoOfEntries = 0;
+  m_hasOverrun = false;
 
   if (m_fd == -1)
   {
@@ -126,7 +126,7 @@ void IqxFileImpl::initRead(bool edit)
   }
 }
 
-IqxFileImpl::IqxFileImpl(const string& filename, string applicationName, string comment, const vector<pair<string, IqxStreamDescDataIQ16>>& iqStreams)
+IqxFileImpl::IqxFileImpl(const string& filename, string applicationName, string comment, const vector<pair<string, IqxStreamDescDataIQ>>& iqStreams)
 #ifdef _WIN32
   : m_fd(portable_open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IWRITE | S_IREAD))
 #else
@@ -136,14 +136,14 @@ IqxFileImpl::IqxFileImpl(const string& filename, string applicationName, string 
  initWrite(applicationName, iqStreams, make_pair("", 0));
 }
 
-IqxFileImpl::IqxFileImpl(int fd, const string& descname, const vector<pair<string, IqxStreamDescDataIQ16>>& iqStreams, vector<string> tags, const pair<string, uint32_t>& gpsStream)
+IqxFileImpl::IqxFileImpl(int fd, const string& descname, const vector<pair<string, IqxStreamDescDataIQ>>& iqStreams, vector<string> tags, const pair<string, uint32_t>& gpsStream)
   : m_fd(fd)
 {
   initWrite(descname, iqStreams, gpsStream);
   setTags(tags);
 }
 
-void IqxFileImpl::initWrite(const string& descname, const vector<pair<string, IqxStreamDescDataIQ16>>& iqStreams, const pair<string, uint32_t>& gpsStream)
+void IqxFileImpl::initWrite(const string& descname, const vector<pair<string, IqxStreamDescDataIQ>>& iqStreams, const pair<string, uint32_t>& gpsStream)
 {
   if (m_fd == -1)
   {
@@ -152,6 +152,7 @@ void IqxFileImpl::initWrite(const string& descname, const vector<pair<string, Iq
   m_write = true;
   m_cueNoOfEntries = 0;
   m_trigNoOfEntries = 0;
+  m_overrunNoOfEntries = 0;
   ALIGNED_VAR(IqxFileDescHeader, header) = {0};
   header.framesize_min = IQX_FRAMESIZE_MIN;
   header.framesize_max = IQX_FRAMESIZE_MAX;
@@ -169,7 +170,7 @@ void IqxFileImpl::initWrite(const string& descname, const vector<pair<string, Iq
   struct timeval startTime;
   if (gettimeofday(&startTime, nullptr) < 0)
   {
-     m_startTime = {0};
+    m_startTime = {0};
   }
   m_startTime.tv_sec = startTime.tv_sec;
   m_startTime.tv_nsec = startTime.tv_usec * 1000;
@@ -185,25 +186,25 @@ void IqxFileImpl::initWrite(const string& descname, const vector<pair<string, Iq
 
   m_sequenceno.resize(iqStreams.size());
   m_samples.resize(iqStreams.size());
-  m_sampleRates.resize(iqStreams.size());
+  m_streamSampleRate.resize(iqStreams.size());
 
   for (size_t i = 0; i < iqStreams.size(); ++i)
   {
-      m_sequenceno[i] = 0;
-      m_samples[i] = 0;
-      if (iqStreams[i].second.samplerate_valid)
-      {
-        m_sampleRates[i] = iqStreams[i].second.samplerate;
-      }
-      else
-      {
-        m_sampleRates[i] = 0;
-      }
-      writeIqStreamDescriptionFrame(i, iqStreams[i].first, iqStreams[i].second);
+    m_sequenceno[i] = 0;
+    m_samples[i] = 0;
+    if (iqStreams[i].second.samplerate_valid)
+    {
+      m_streamSampleRate[i] = iqStreams[i].second.samplerate;
+    }
+    else
+    {
+      m_streamSampleRate[i] = 0;
+    }
+    writeIqStreamDescriptionFrame(i, iqStreams[i].first, iqStreams[i].second);
   }
   if(gps)
   {
-      writeGpsStreamDescriptionFrame(iqStreams.size(), gpsStream.first, gpsStream.second);
+    writeGpsStreamDescriptionFrame(iqStreams.size(), gpsStream.first, gpsStream.second);
   }
   writePayloadStartFrame();
   m_payloadOffset = portable_lseek(m_fd, 0, SEEK_CUR);
@@ -237,6 +238,7 @@ IqxFileImpl::~IqxFileImpl()
 
       writeTriggerFrame();
       writeCueFrame();
+      writeOverrunFrame();
       writeEofFrame();
       updateFileDescriptor(0);
     }
@@ -332,7 +334,7 @@ void IqxFileImpl::readFrame(IqxPreamble& preamble, IqxFrameData& frame)
     throw iqxformat_error("wrong frame magic number");
   }
 
-  if (preamble.frametype != IQX_FRAME_TYPE_TRIGGER && preamble.frametype != IQX_FRAME_TYPE_CUE)
+  if (preamble.frametype != IQX_FRAME_TYPE_TRIGGER && preamble.frametype != IQX_FRAME_TYPE_CUE && preamble.frametype != IQX_FRAME_TYPE_OVERRUN)
   {
     readToBuffer(frame.header_, preamble.headsize);
     readToBuffer(frame.data_, preamble.datasize);
@@ -364,7 +366,7 @@ void IqxFileImpl::readToBuffer(void*& buffer, size_t bytes)
   }
   else
   {
-     throw iqxformat_error("frame size too large");
+    throw iqxformat_error("frame size too large");
   }
 }
 
@@ -391,33 +393,36 @@ void IqxFileImpl::readStreamDescriptors()
 
     if (streamDescFrame.header().sourcestr[0] == 0)
     {
-        m_streamSources[i] = "stream#" + to_string(i);
+      m_streamSources[i] = "stream#" + to_string(i);
     }
     else
     {
-        m_streamSources[i] = streamDescFrame.header().sourcestr;
+      m_streamSources[i] = streamDescFrame.header().sourcestr;
     }
 
-    if (streamDescFrame.header().type == IQX_FRAME_TYPE_IQDATA)
+    IqxStreamType type = streamDescFrame.header().type;
+    if ((type == IQX_STREAM_TYPE_IQDATA16) || (type == IQX_STREAM_TYPE_IQDATA12))
     {
       m_iqStreamNumbers.push_back(i);
       m_streamNo[m_streamSources[i]] = i;
       m_streamNo[m_streamSources[i] + "_I"] = i;
       m_streamNo[m_streamSources[i] + "_Q"] = i;
       m_streamDataRate.push_back(streamDescFrame.header().datarate);
-      if (preamble.datasize >= sizeof(IqxStreamDescDataIQ16))
+      m_streamSampleRate.push_back(streamDescFrame.data().samplerate);
+
+      if (preamble.datasize >= sizeof(IqxStreamDescDataIQ))
       {
-          m_iqProperties.emplace(make_pair(m_streamSources[i], streamDescFrame.data()));
+        m_iqProperties.emplace(make_pair(m_streamSources[i], streamDescFrame.data()));
       }
       else
       {
-          IqxStreamDescDataIQ16 iq16 = {0}; // fill with empty struct if no info available
-          m_iqProperties.emplace(make_pair(m_streamSources[i], iq16));
+        IqxStreamDescDataIQ iq = {0}; // fill with empty struct if no info available
+        m_iqProperties.emplace(make_pair(m_streamSources[i], iq));
       }
     }
     else if(streamDescFrame.header().type == IQX_FRAME_TYPE_GEOLOC)
     {
-        m_gpsUpdateRate = static_cast<uint32_t>(streamDescFrame.header().datarate);
+      m_gpsUpdateRate = static_cast<uint32_t>(streamDescFrame.header().datarate);
     }
     m_streams.emplace(make_pair(i, streamDescFrame.header().type));
   }
@@ -487,6 +492,13 @@ void IqxFileImpl::readMetaData()
       break;
     }
 
+    case IQX_FRAME_TYPE_OVERRUN:
+    {
+      m_hasOverrun = true;
+      readOverrunFrame(preamble);
+      break;
+    }
+
     case IQX_FRAME_TYPE_EOF:
       eof = true;
       if (m_edit)
@@ -507,8 +519,8 @@ void IqxFileImpl::readIqFrameData()
   m_iqStreamNoOfSamples.resize(m_fileDescFrame.header().nstreams);
   for (size_t i=0; i< m_fileDescFrame.header().nstreams; i++)
   {
-      m_iqStreamNoOfFrames[i] = 0;
-      m_iqStreamNoOfSamples[i] = 0;
+    m_iqStreamNoOfFrames[i] = 0;
+    m_iqStreamNoOfSamples[i] = 0;
   }
 
   // if there is a cur frame, there is no need to inspect all data frames
@@ -517,7 +529,8 @@ void IqxFileImpl::readIqFrameData()
     for (size_t i = 0; i< m_fileDescFrame.header().nstreams; i++)
     {
       // calculate the number of samples for iq streams
-      if (getStreamType(i) == IQX_STREAM_TYPE_IQDATA16)
+      IqxStreamType strtype = getStreamType(i);
+      if ((strtype == IQX_STREAM_TYPE_IQDATA16) || (strtype == IQX_STREAM_TYPE_IQDATA12))
       {
         m_iqStreamNoOfSamples[i] = getSampleFromTimestamp(i, m_duration);
       }
@@ -530,7 +543,6 @@ void IqxFileImpl::readIqFrameData()
   }
   else
   {
-
     iqx_off_t offset = portable_lseek(m_fd, m_fileDescFrame.header().payloadoffset, SEEK_SET);
 
     for (bool eof = false; !eof;)
@@ -554,19 +566,21 @@ void IqxFileImpl::readIqFrameData()
       {
       case IQX_FRAME_TYPE_IQDATA:
       {
-          // create cue entry, so that mosaik can always workwith cues
-          IqxCueEntry cue;
-          cue.streamnum = preamble.streamnum;
-          cue.offset = offset;
-          offset = newOffset;
-          cue.timestamp = getTimestampFromSample(cue.streamnum, m_iqStreamNoOfSamples[preamble.streamnum]);
-          addCueEntry(cue);
+        // create cue entry, so that mosaik can always workwith cues
+        IqxCueEntry cue;
+        cue.streamnum = preamble.streamnum;
+        cue.offset = offset;
+        offset = newOffset;
+        cue.timestamp = getTimestampFromSample(static_cast<size_t>(cue.streamnum), m_iqStreamNoOfSamples[preamble.streamnum]);
+        addCueEntry(cue);
 
-          // calculate frames/stream samples/stream
-          m_iqStreamNoOfFrames[preamble.streamnum]++;
-          //                                                    one IQ pair has 4 byte
-          m_iqStreamNoOfSamples[preamble.streamnum] += preamble.datasize / 4;
-          break;
+        // calculate frames/stream samples/stream
+        m_iqStreamNoOfFrames[preamble.streamnum]++;
+
+        // calculate number of samples
+        IqxStreamType strtype = getStreamType(preamble.streamnum);
+        m_iqStreamNoOfSamples[preamble.streamnum] += (strtype == IQX_STREAM_TYPE_IQDATA16) ? (preamble.datasize / 4) : (static_cast<float>(preamble.datasize) / 3 * 240 / 256);
+        break;
       }
       case IQX_FRAME_TYPE_PAYLOADEND:
       {
@@ -582,33 +596,39 @@ void IqxFileImpl::readIqFrameData()
 
 const vector<uint64_t>& IqxFileImpl::getStreamsNoOfFrames() const
 {
-    return m_iqStreamNoOfFrames;
+  return m_iqStreamNoOfFrames;
 }
 
 uint64_t IqxFileImpl::getStreamNoOfFrames(size_t streamno) const
 {
-    return m_iqStreamNoOfFrames.at(streamno);
+  return m_iqStreamNoOfFrames.at(streamno);
 }
 
 const vector<uint64_t>& IqxFileImpl::getStreamsNoOfSamples() const
 {
-    return m_iqStreamNoOfSamples;
+  return m_iqStreamNoOfSamples;
 }
 
 uint64_t IqxFileImpl::getStreamNoOfSamples(size_t streamno) const
 {
-    return m_iqStreamNoOfSamples.at(streamno);
+  return m_iqStreamNoOfSamples.at(streamno);
 }
 
 size_t IqxFileImpl::getStreamNo(const string& streamOrArrayName) const
 {
-    return m_streamNo.at(streamOrArrayName);
+  return m_streamNo.at(streamOrArrayName);
 }
 
 double IqxFileImpl::getIqStreamDataRate(size_t streamno) const
 {
-    return m_streamDataRate.at(streamno);
+  return m_streamDataRate.at(streamno);
 }
+
+double IqxFileImpl::getIqStreamSampleRate(size_t streamno) const
+{
+  return m_streamSampleRate.at(streamno);
+}
+
 
 void IqxFileImpl::writeFrame(IqxPreamble& preamble, const void* head, const void* data, const void* tail)
 {
@@ -619,7 +639,7 @@ void IqxFileImpl::writeFrame(IqxPreamble& preamble, const void* head, const void
 
   if (write(m_fd, &preamble, sizeof(IqxPreamble)) < (static_cast<ssize_t>(sizeof(IqxPreamble))))
   {
-      throw iqxformat_error(strerror(errno));
+    throw iqxformat_error(strerror(errno));
   }
 
   if (head != nullptr)
@@ -631,7 +651,7 @@ void IqxFileImpl::writeFrame(IqxPreamble& preamble, const void* head, const void
   }
   else
   {
-       portable_lseek(m_fd, preamble.headsize, SEEK_CUR);
+     portable_lseek(m_fd, preamble.headsize, SEEK_CUR);
   }
 
   if (data != nullptr)
@@ -643,7 +663,7 @@ void IqxFileImpl::writeFrame(IqxPreamble& preamble, const void* head, const void
   }
   else
   {
-       portable_lseek(m_fd, preamble.datasize, SEEK_CUR);
+    portable_lseek(m_fd, preamble.datasize, SEEK_CUR);
   }
 }
 
@@ -661,38 +681,34 @@ void IqxFileImpl::writeFileDescriptionFrame(IqxFileDescHeader& header, const voi
   UuidCreate(&uuid);
 #else
   uuid_generate(header.uuid);
-
   // save uuid to class attribute
   char uuidstr[37] = "\0";
   uuid_unparse(header.uuid, uuidstr);
   m_uuid = string(uuidstr);
 #endif
-
-
-
-
   writeFrame(preamble, &header, data, nullptr);
 }
 
-void IqxFileImpl::writeIqStreamDescriptionFrame(size_t streamNumber, const string& streamName, const IqxStreamDescDataIQ16& iqStreamDescriptor)
+void IqxFileImpl::writeIqStreamDescriptionFrame(size_t streamNumber, const string& streamName, const IqxStreamDescDataIQ& iqStreamDescriptor)
 {
   ALIGNED_VAR(IqxPreamble, preamble) = {0};
-  preamble.datasize = sizeof(IqxStreamDescDataIQ16);
+  preamble.datasize = sizeof(IqxStreamDescDataIQ);
   preamble.headsize = portable_max(sizeof(IqxStreamDescHeader), static_cast<size_t>(IQX_HEADSIZE_MIN));
   preamble.frametype = IQX_FRAME_TYPE_STREAMDESC;
   preamble.streamnum = static_cast<int32_t>(streamNumber);
 
   ALIGNED_VAR(IqxStreamDescHeader, header) = {0};
   strncpy(header.sourcestr, streamName.c_str(), IQX_MAX_SOURCENAME_STRLEN);
-  header.sourcestr[IQX_MAX_SOURCENAME_STRLEN - 1] = '\0';
-  header.datarate = static_cast<double>(iqStreamDescriptor.samplerate)*4; // data rate = bytes/s. sample rate = samples/s. 1 sample = 4 bytes (16I + 16Q)
+  header.sourcestr[IQX_MAX_SOURCENAME_STRLEN - 1] = '\0';  
+  double bytesPerSample = iqStreamDescriptor.resolution * 2 / 8;
+  header.datarate = static_cast<double>(iqStreamDescriptor.samplerate) * ((iqStreamDescriptor.resolution == 12) ? (bytesPerSample * 256/240) : bytesPerSample); // data rate = bytes/s. sample rate = samples/s. 1 sample = 4 bytes (16I + 16Q) or 1 sample = 3 bytes (12I + 12Q)
   header.framerate = 0;
   header.framesize_min = preamble.framesize; // TODO
   header.framesize_max = preamble.framesize; // TODO
-  header.type = IQX_STREAM_TYPE_IQDATA16;
+  header.type = (iqStreamDescriptor.resolution == 16) ? IQX_STREAM_TYPE_IQDATA16 : IQX_STREAM_TYPE_IQDATA12;
 
-  ALIGNED_VAR(IqxStreamDescDataIQ16, iqdata) = {0};
-  memcpy(&iqdata, &iqStreamDescriptor, sizeof(IqxStreamDescDataIQ16));
+  ALIGNED_VAR(IqxStreamDescDataIQ, iqdata) = {0};
+  memcpy(&iqdata, &iqStreamDescriptor, sizeof(IqxStreamDescDataIQ));
 
   writeFrame(preamble, &header, &iqdata, nullptr);
 }
@@ -764,13 +780,12 @@ void IqxFileImpl::writeDataFrame(int64_t streamno, int64_t sequenceno, vector<in
   //preamble.previousframesize = ;
   preamble.timestamp = m_duration;
   m_samples[streamno] += data.size() / 2;
-  if (m_sampleRates[streamno] > 0)
+  if (m_streamSampleRate[streamno] > 0)
   {
-    float64_t duration = m_samples[streamno] / m_sampleRates[streamno];
+    float64_t duration = m_samples[streamno] / m_streamSampleRate[streamno];
     double seconds = 0.0;
     m_duration.tv_nsec = static_cast<int64_t>(modf(duration, &seconds) * 1.0e9);
     m_duration.tv_sec = static_cast<int64_t>(seconds);
-
   }
   ALIGNED_VAR(IqxIqDataHeader, datahead) = {0};
   datahead.sequencenum = sequenceno;
@@ -836,7 +851,7 @@ void IqxFileImpl::updateFileDescriptor(int32_t chunknext)
   ALIGNED_VAR(IqxPreamble, preamble) = {0};
   ALIGNED_VAR(IqxFileDescHeader, filedhead) = {0};
 
-  // save current file position
+  // save current file position 
   int64_t lastpos = portable_lseek(m_fd, 0, SEEK_CUR);
 
   // and seek to file description frame
@@ -845,15 +860,15 @@ void IqxFileImpl::updateFileDescriptor(int32_t chunknext)
   // get preamble
   if (read(m_fd, &preamble, sizeof(IqxPreamble)) < (static_cast<ssize_t>(sizeof(IqxPreamble))))
   {
-      throw iqxformat_error("incomplete size of preamble");
+    throw iqxformat_error("incomplete size of preamble");
   }
   if (preamble.frametype != IQX_FRAME_TYPE_FILEDESC)
   {
-      throw iqxformat_error("wrong frame type: expecting file descriptor frame");
+    throw iqxformat_error("wrong frame type: expecting file descriptor frame");
   }
   if (memcmp(&preamble.sync, iqxsync, sizeof(iqxsync)) != 0)
   {
-	  throw iqxformat_error("wrong magic number in preamble of file description frame");
+    throw iqxformat_error("wrong magic number in preamble of file description frame");
   }
 
   // get file description
@@ -882,39 +897,45 @@ void IqxFileImpl::updateFileDescriptor(int32_t chunknext)
   portable_lseek(m_fd, lastpos, SEEK_SET);
 }
 
-IqxStreamDescDataIQ16 IqxFileImpl::getIqStreamParameters(const string& source) const
+IqxStreamDescDataIQ IqxFileImpl::getIqStreamParameters(const string& source) const
 {
-    return m_iqProperties.at(source);
+  return m_iqProperties.at(source);
 }
 
 int IqxFileImpl::getSequenceNo(size_t streamno) const
-{
-	return m_sequenceno[streamno];
+{return m_sequenceno[streamno];
 }
 
 void IqxFileImpl::setSequenceNo(size_t streamno, int sequenceNo)
 {
-	m_sequenceno[streamno] = sequenceNo;
+  m_sequenceno[streamno] = sequenceNo;
 }
 
 void IqxFileImpl::setDuration(iqx_timespec duration)
 {
-    m_duration = duration;
+  m_duration = duration;
 }
 
 void IqxFileImpl::setTags(vector<string>tags)
 {
-    m_tags = tags;
+  m_tags = tags;
 }
 
-void IqxFileImpl::setComment(std::string comment)
+void IqxFileImpl::setComment(string comment)
 {
+  if (m_comment.empty())
+  {
     m_comment = comment;
+  }
+  else
+  {
+    m_comment += "; " + comment;
+  }
 }
 
 void IqxFileImpl::setBookmarks(map<string, iqx_timespec> bookmarks)
 {
-    m_bookmarks = bookmarks;
+  m_bookmarks = bookmarks;
 }
 
 void IqxFileImpl::validateFile()
@@ -931,7 +952,7 @@ void IqxFileImpl::validateFile()
 
 IqxStreamType IqxFileImpl::getStreamType(size_t streamNo) const
 {
-   return m_streams.at(streamNo);
+  return m_streams.at(streamNo);
 }
 
 uint32_t IqxFileImpl::getGpsUpdateRate() const
@@ -951,8 +972,8 @@ void IqxFileImpl::setStartTime(iqx_timespec time)
 
 IqxExportPermission IqxFileImpl::getExportPermission(size_t streamno) const
 {
-  IqxStreamDescDataIQ16 iqdata16 = m_iqProperties.at(getStreamSource(streamno));
-  return (iqdata16.permission_valid ? iqdata16.export_permission : IQX_EXPORT_PERMISSION_UNKNOWN);
+  IqxStreamDescDataIQ iqdata = m_iqProperties.at(getStreamSource(streamno));
+  return (iqdata.permission_valid ? iqdata.export_permission : IQX_EXPORT_PERMISSION_UNKNOWN);
 }
 
 void IqxFileImpl::addTriggerEntry(IqxTriggerEntry& trigger)
@@ -994,26 +1015,26 @@ void IqxFileImpl::writeTriggerFrame()
   writeFrame(preamble, &triggerhead, &m_triggers[0], nullptr);
 }
 
-iqx_timespec IqxFileImpl::getTimestampFromSample(uint64_t streamno, uint64_t sample)
+iqx_timespec IqxFileImpl::getTimestampFromSample(size_t streamno, uint64_t sample)
 {
   iqx_timespec timets;
   double timefp;
 
-  IqxStreamDescDataIQ16 iqstream = getIqStreamParameters(getStreamSource(streamno));
+  IqxStreamDescDataIQ iqstream = getIqStreamParameters(getStreamSource(streamno));
   timefp = sample / iqstream.samplerate;
   timets.tv_sec = (int64_t) timefp;
   timets.tv_nsec = (int64_t) ((timefp - timets.tv_sec) * 1e9 + .5);
   return timets;
 }
 
-uint64_t IqxFileImpl::getSampleFromTimestamp(uint64_t streamno, iqx_timespec timestamp)
+uint64_t IqxFileImpl::getSampleFromTimestamp(size_t streamno, iqx_timespec timestamp)
 {
     uint64_t sample;
     double timefp;
 
-    IqxStreamDescDataIQ16 iqstream = getIqStreamParameters(getStreamSource(streamno));
+    IqxStreamDescDataIQ iqstream = getIqStreamParameters(getStreamSource(streamno));
     timefp = timestamp.tv_sec + timestamp.tv_nsec * 1e-9;
-    sample = (uint64_t) (iqstream.samplerate * timefp + .5);
+    sample = (uint64_t) (iqstream.samplerate * timefp + .5);    
     return sample;
 }
 
@@ -1027,7 +1048,7 @@ void IqxFileImpl::readTriggerFrame(IqxPreamble& preamble)
   m_trigNoOfEntries = header.numentries;
   m_triggers.resize(preamble.datasize/sizeof(IqxTriggerEntry));
 
-  if (read(m_fd, &m_triggers[0],  preamble.datasize) < static_cast<ssize_t>(preamble.datasize))
+  if (portable_read(m_fd, &m_triggers[0], preamble.datasize) < static_cast<ssize_t>(preamble.datasize))
   {
     throw iqxformat_error("trigger data incomplete");
   }
@@ -1048,13 +1069,13 @@ void IqxFileImpl::readCueFrame(IqxPreamble& preamble)
   }
 }
 
-vector<IqxTriggerEntry> IqxFileImpl::getTriggers(uint64_t streamno)
+vector<IqxTriggerEntry> IqxFileImpl::getTriggers(size_t streamno)
 {
   vector<IqxTriggerEntry> result;
 
   for (size_t i = 0; i < m_trigNoOfEntries; ++i)
   {
-    if (static_cast<uint64_t>(m_triggers[i].streamnum) == streamno)
+    if (static_cast<size_t>(m_triggers[i].streamnum) == streamno)
     {
       result.push_back(m_triggers[i]);
     }
@@ -1062,8 +1083,18 @@ vector<IqxTriggerEntry> IqxFileImpl::getTriggers(uint64_t streamno)
   return result;
 }
 
-void IqxFileImpl::addCueEntry(IqxCueEntry& cue)
+vector<IqxTriggerEntry> IqxFileImpl::getAllTriggers() const
 {
+  vector<IqxTriggerEntry> result;
+  for (size_t i = 0; i < m_trigNoOfEntries; ++i)
+  {
+    result.push_back(m_triggers[i]);
+  }
+  return result;
+}
+
+void IqxFileImpl::addCueEntry(IqxCueEntry& cue)
+{  
   if (m_cueNoOfEntries < MAX_CUE_ENTRIES)
   {
     m_cues.push_back(cue);
@@ -1071,13 +1102,13 @@ void IqxFileImpl::addCueEntry(IqxCueEntry& cue)
   }
 }
 
-vector<IqxCueEntry> IqxFileImpl::getCues(uint64_t streamno)
+vector<IqxCueEntry> IqxFileImpl::getCues(size_t streamno)
 {
   vector<IqxCueEntry> result;
 
   for (size_t i = 0; i < m_cueNoOfEntries; ++i)
   {
-    if (static_cast<uint64_t>(m_cues[i].streamnum) == streamno)
+    if (static_cast<size_t>(m_cues[i].streamnum) == streamno)
     {
       result.push_back(m_cues[i]);
     }
@@ -1085,22 +1116,32 @@ vector<IqxCueEntry> IqxFileImpl::getCues(uint64_t streamno)
   return result;
 }
 
-IqxCueEntry IqxFileImpl::getCueEntry(uint64_t streamno, iqx_timespec timestamp)
+IqxCueEntry IqxFileImpl::getCueEntry(size_t streamno, iqx_timespec timestamp)
 {
-  vector<IqxCueEntry> cues;
   double time = timestamp.tv_sec + timestamp.tv_nsec * 1e-9;
-
-  cues = getCues(streamno);
-  if (m_cueNoOfEntries == 1)
-  {
-    return cues[0];
-  }
+  vector<IqxCueEntry> cues = getCues(streamno);
   for (size_t i = m_cueNoOfEntries - 1; i >= 0; i--)
   {
     double timeOfFrame = cues[i].timestamp.tv_sec + cues[i].timestamp.tv_nsec * 1e-9;
     if (time >= timeOfFrame)
     {
       return cues[i];
+    }
+  }
+  throw iqxformat_error("no matching cue entry found at given timestamp");
+}
+
+IqxCueEntry IqxFileImpl::getNextCueEntry(size_t streamno, iqx_timespec timestamp)
+{
+  double time = timestamp.tv_sec + timestamp.tv_nsec * 1e-9;
+  vector<IqxCueEntry> cues = getCues(streamno);
+  for (size_t i = 0; i < m_cueNoOfEntries-1; i++)
+  {
+    double timeOfFrame = cues[i].timestamp.tv_sec + cues[i].timestamp.tv_nsec * 1e-9;
+    double timeOfNextFrame = cues[i+1].timestamp.tv_sec + cues[i+1].timestamp.tv_nsec * 1e-9;
+    if ((time >= timeOfFrame) && (time < timeOfNextFrame))
+    {
+      return cues[i+1];
     }
   }
   throw iqxformat_error("no matching cue entry found at given timestamp");
@@ -1136,7 +1177,7 @@ void IqxFileImpl::writeCueFrame()
 }
 
 void IqxFileImpl::editRecordingName(const string& descname)
-{
+{ 
   portable_lseek(m_fd, 0, SEEK_SET);
   strncpy(m_fileDescFrame.header().name, descname.c_str(), IQX_MAX_FILENAME_STRLEN);
   m_fileDescFrame.header().name[IQX_MAX_FILENAME_STRLEN-1] = '\0';
@@ -1204,9 +1245,9 @@ void IqxFileImpl::editTags(const vector<string>& tags)
   m_tags = tags;
 }
 
-string IqxFileImpl::readUUID()
+const string& IqxFileImpl::getUuid() const
 {
-    return m_uuid;
+  return m_uuid;
 }
 
 void IqxFileImpl::overwriteExistingTags(const vector<string>& tags, size_t size)
@@ -1230,4 +1271,63 @@ void IqxFileImpl::invalidateExistingTag()
   writeFrame(preamble, &header, nullptr, nullptr);
 }
 
+void IqxFileImpl::addOverrunEntry(IqxOverrunEntry& overrun)
+{
+  if (m_overruns.size() < MAX_OVERRUN_ENTRIES)
+  {
+    m_overruns.push_back(overrun);
+    ++m_overrunNoOfEntries;
+  }
+}
+
+void IqxFileImpl::writeOverrunFrame()
+{
+  if (m_overrunNoOfEntries == 0)
+  {
+    return;
+  }
+  ALIGNED_VAR(IqxPreamble, preamble) = {0};
+  ALIGNED_VAR(IqxOverrunHeader, overrunhead) = {0};
+  memcpy(&preamble.sync[0], iqxsync, sizeof(iqxsync));
+  preamble.streamnum = IQX_STREAM_INDEPENDENT;
+  preamble.headsize = max(sizeof(IqxOverrunHeader), static_cast<size_t>(IQX_HEADSIZE_MIN));
+  preamble.frametype = IQX_FRAME_TYPE_OVERRUN;
+
+  // fill overrun header
+  overrunhead.numentries = m_overrunNoOfEntries;
+
+  // calculate data size and make it align to 4k
+  uint64_t sizebytes = m_overrunNoOfEntries * sizeof(IqxOverrunEntry);
+  uint64_t numblocks = ((sizebytes % IQX_DATA_ALIGNMENT) > 0.0) ? ((sizebytes/IQX_DATA_ALIGNMENT)+1) : (sizebytes/IQX_DATA_ALIGNMENT);
+  preamble.datasize = numblocks * IQX_DATA_ALIGNMENT;
+
+  uint64_t zeroEntries = (preamble.datasize - sizebytes) / sizeof(IqxOverrunEntry);
+  IqxOverrunEntry zero = {0};
+  for (size_t i = 0; i < zeroEntries; ++i)
+  {
+    m_overruns.push_back(zero);
+  }
+  writeFrame(preamble, &overrunhead, &m_overruns[0], nullptr);
+}
+
+void IqxFileImpl::readOverrunFrame(IqxPreamble& preamble)
+{
+  ALIGNED_VAR(IqxOverrunHeader, header) = {0};
+  if (read(m_fd, &header, sizeof(header)) < static_cast<ssize_t>(sizeof(header)))
+  {
+    throw iqxformat_error("overrun header incomplete");
+  }
+  m_overrunNoOfEntries = header.numentries;
+  m_overruns.resize(preamble.datasize/sizeof(IqxOverrunEntry));
+
+  if (portable_read(m_fd, &m_overruns[0], preamble.datasize) < static_cast<ssize_t>(preamble.datasize))
+  {
+    throw iqxformat_error("overrun data incomplete");
+  }
+}
+
+bool IqxFileImpl::hasOverrun() const
+{
+  return m_hasOverrun;
+}
 } // namespace

@@ -250,6 +250,7 @@ private:
     unsigned long long m_ullSamples;
     double m_dClock;
     double m_dLevelRms;
+    double m_dRfRmsLevel;
     double m_dLevelPeak;
     char m_sType[16];
     char m_sDateTime[32];

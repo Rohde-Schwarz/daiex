@@ -31,21 +31,22 @@
 
 
 CLBWvInFile::CLBWvInFile()
-: m_bFileIsOpen(false)
-, m_pFile(NULL)
-, m_bScramble(false)
-, m_iBufferSize(1000000)
-, m_pReadBuffer(NULL)
-, m_pReadBuffer2(NULL)
-, m_iNoSamplesInBuffer(0)
-, m_pBufferStart(NULL)
-, m_ullCurSampleInFile(0)
-, m_iHeaderBytes(0)
-, m_iBytesAfterFirstRead(0)
-, m_uCrcTag(0)
-, m_ullSamples(0)
-, m_dClock(0.0)
-, m_dLevelRms(0.0)
+   : m_bFileIsOpen(false)
+   , m_pFile(NULL)
+   , m_bScramble(false)
+   , m_iBufferSize(1000000)
+   , m_pReadBuffer(NULL)
+   , m_pReadBuffer2(NULL)
+   , m_iNoSamplesInBuffer(0)
+   , m_pBufferStart(NULL)
+   , m_ullCurSampleInFile(0)
+   , m_iHeaderBytes(0)
+   , m_iBytesAfterFirstRead(0)
+   , m_uCrcTag(0)
+   , m_ullSamples(0)
+   , m_dClock(0.0)
+   , m_dLevelRms(0.0)
+   , m_dRfRmsLevel(0.0)
 , m_dLevelPeak(0.0)
 , m_uMSegCount(0)
 , m_iMSegClockMode(0)
@@ -201,6 +202,9 @@ int CLBWvInFile::GetParam(eParamID paramID, double *dParam)
     {
     case eParamClock:
         *dParam = m_dClock;
+        return(0);
+    case eParamRfRmsLevel:
+        *dParam = m_dRfRmsLevel;
         return(0);
     default:
         break;
@@ -390,6 +394,7 @@ int CLBWvInFile::Open(char *sFileName)
     m_ullSamples=0;
     m_dClock=0.0;
     m_dLevelRms=0.0;
+    m_dRfRmsLevel = 0.0;
     m_dLevelPeak=0.0;
     memset(m_sType, 0, sizeof(m_sType));
     memset(m_sDateTime, 0, sizeof(m_sDateTime));
@@ -422,6 +427,7 @@ int CLBWvInFile::Open(char *sFileName)
     bool dateTagFound=false;
     bool copyRightTagFound=false;
     bool commentTagFound=false;
+    bool rfRmsLevelTagFound = false;
     bool msegSettingsFileTagFound=false;
     bool msegCountTagFound=false;
     bool msegClockModeTagFound=false;
@@ -629,6 +635,20 @@ int CLBWvInFile::Open(char *sFileName)
                     commentTagFound=true;
                 }
             }
+        }
+
+        if (!rfRmsLevelTagFound)
+        {
+           const char *searchStr = "{COMMENT:Signal generated for SMx RMS level:";
+           pCurTag = strstr(m_pReadBuffer, searchStr);
+           if (pCurTag != NULL)
+           {
+              if (pCurTag != NULL && strstr(pCurTag + 1, "}") != NULL)
+              {
+                 sscanf(pCurTag + strlen(searchStr), "%lf", &m_dRfRmsLevel);
+                 rfRmsLevelTagFound = true;
+              }
+           }
         }
 
         if (!msegSettingsFileTagFound)

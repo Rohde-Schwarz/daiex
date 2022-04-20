@@ -97,7 +97,8 @@ SET( INC_DIRS
   include/
   aid/include/
   ${CMAKE_SOURCE_DIR}/3rdparty/mmf/
-  ${CMAKE_SOURCE_DIR}/3rdparty/PugiXml/ )
+  ${CMAKE_SOURCE_DIR}/3rdparty/PugiXml/ 
+  ${CMAKE_SOURCE_DIR}/lib/iqxformat/include/ )
 
 TARGET_INCLUDE_DIRECTORIES( daiex PRIVATE ${INC_DIRS} )
 
@@ -136,8 +137,8 @@ ELSEIF( UNIX )
     ZLIB::ZLIB
     hdf5-static
     uuid
-    libmatio 
-	iqxformat)
+    libmatio
+    iqxformat)
 
   # set warning level
   SET_PROPERTY( TARGET daiex APPEND_STRING PROPERTY COMPILE_FLAGS " -Wall")
@@ -180,6 +181,8 @@ IF( WIN32 )
     install( FILES ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.pdb DESTINATION bin )
   endif()
   install( FILES ${CMAKE_BINARY_DIR}/lib/doc/gen/LibDataImportExport.chm DESTINATION doc )
+ELSE()
+  install( FILES ${CMAKE_BINARY_DIR}/lib/liblibmatio.so DESTINATION lib )
 ENDIF()
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory.xml DESTINATION doc )
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory.xsd DESTINATION doc )

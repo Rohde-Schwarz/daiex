@@ -13,7 +13,6 @@
 	* See the License for the specific language governing permissions and
 	* limitations under the License.
 */
-/*******************************************************************************/
 
 #include "iqxformat/iqxfile.h"
 #ifdef __APPLE__
@@ -47,11 +46,11 @@ IqxFile::IqxFile(int fd)
   : m_pimpl(new IqxFileImpl(fd))
 {}
 
-IqxFile::IqxFile(int fd, const string& descname, const vector<pair<string, IqxStreamDescDataIQ16>>& iqStreams, vector<string> tags, const pair<string, uint32_t>& gpsStream)
+IqxFile::IqxFile(int fd, const string& descname, const vector<pair<string, IqxStreamDescDataIQ>>& iqStreams, vector<string> tags, const pair<string, uint32_t>& gpsStream)
   : m_pimpl(new IqxFileImpl(fd, descname, iqStreams, tags, gpsStream))
 {}
 
-IqxFile::IqxFile(const string& filename, string applicationName, string comment, const vector<pair<string, IqxStreamDescDataIQ16>>& iqStreams)
+IqxFile::IqxFile(const string& filename, string applicationName, string comment, const vector<pair<string, IqxStreamDescDataIQ>>& iqStreams)
     : m_pimpl(new IqxFileImpl(filename, applicationName, comment, iqStreams))
 {}
 
@@ -163,7 +162,12 @@ double IqxFile::getIqStreamDataRate(size_t streamno) const
     return m_pimpl->getIqStreamDataRate(streamno);
 }
 
-IqxStreamDescDataIQ16 IqxFile::getIqStreamParameters(const std::string& source) const
+double IqxFile::getIqStreamSampleRate(size_t streamno) const
+{
+    return m_pimpl->getIqStreamSampleRate(streamno);
+}
+
+IqxStreamDescDataIQ IqxFile::getIqStreamParameters(const std::string& source) const
 {
     return m_pimpl->getIqStreamParameters(source);
 }
@@ -222,12 +226,12 @@ IqxExportPermission IqxFile::getExportPermission(size_t streamno) const
   return m_pimpl->getExportPermission(streamno);
 }
 
-iqx_timespec IqxFile::getTimestampFromSample(uint64_t streamno, uint64_t sample)
+iqx_timespec IqxFile::getTimestampFromSample(size_t streamno, uint64_t sample)
 {
   return m_pimpl->getTimestampFromSample(streamno, sample);
 }
 
-uint64_t IqxFile::getSampleFromTimestamp(uint64_t streamno, iqx_timespec timestamp)
+uint64_t IqxFile::getSampleFromTimestamp(size_t streamno, iqx_timespec timestamp)
 {
   return m_pimpl->getSampleFromTimestamp(streamno, timestamp);
 }
@@ -237,9 +241,14 @@ void IqxFile::addTriggerEntry(IqxTriggerEntry& trigger)
    return m_pimpl->addTriggerEntry(trigger);
 }
 
-vector<IqxTriggerEntry> IqxFile::getTriggers(uint64_t streamno)
+vector<IqxTriggerEntry> IqxFile::getTriggers(size_t streamno)
 {
   return m_pimpl->getTriggers(streamno);
+}
+
+vector<IqxTriggerEntry> IqxFile::getAllTriggers()
+{
+  return m_pimpl->getAllTriggers();
 }
 
 void IqxFile::addCueEntry(IqxCueEntry& cue)
@@ -247,9 +256,14 @@ void IqxFile::addCueEntry(IqxCueEntry& cue)
   m_pimpl->addCueEntry(cue);
 }
 
-IqxCueEntry IqxFile::getCueEntry(uint64_t streamno, iqx_timespec timestamp)
+IqxCueEntry IqxFile::getCueEntry(size_t streamno, iqx_timespec timestamp)
 {
   return m_pimpl->getCueEntry(streamno, timestamp);
+}
+
+IqxCueEntry IqxFile::getNextCueEntry(size_t streamno, iqx_timespec timestamp)
+{
+  return m_pimpl->getNextCueEntry(streamno, timestamp);
 }
 
 void IqxFile::editRecordingName(const string& descname)
@@ -267,9 +281,18 @@ void IqxFile::editTags(const vector<string>& tags)
   m_pimpl->editTags(tags);
 }
 
-string IqxFile::readUUID()
+const string& IqxFile::getUuid() const
 {
-  return m_pimpl->readUUID();
+  return m_pimpl->getUuid();
 }
 
+void IqxFile::addOverrunEntry(IqxOverrunEntry& overrun)
+{
+  m_pimpl->addOverrunEntry(overrun);
+}
+
+bool IqxFile::hasOverrun() const
+{
+  return m_pimpl->hasOverrun();
+}
 } // namespace

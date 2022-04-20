@@ -6,7 +6,7 @@ include( ExternalProject )
 
 IF( WIN32 )
 	MESSAGE( "Deflating libarchive" )
-	SET( LIBARCHIVE_VER 3.3.1 )
+	SET( LIBARCHIVE_VER 3.5.2 )
 	SET( LIBARCHIVEDIR ${CMAKE_CURRENT_BINARY_DIR}/../_packages/libarchive )
 
 	EXTERNALPROJECT_ADD( libarchive_ext

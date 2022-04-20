@@ -105,6 +105,12 @@ namespace rohdeschwarz
         */static bool isFileAccessible(const std::string& filename);
 
         /**
+          @brief Verifies whether or not the specified file is writeable.
+          @param [in]  filename Fully qualified path to the file.
+          @returns Returns TRUE if the file can be written.
+        */static bool isFileWriteable(const std::string& filename);
+
+        /**
           @brief Uses the memory mapped file reader to open the specified file.
           @param [in]  mmf The reader to be used.
           @param [in]  filename The filename to open, UTF-8 encoding.

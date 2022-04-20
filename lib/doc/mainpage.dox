@@ -9,7 +9,7 @@
  /*!
 @mainpage LibDataImportExport Manual
 
-Version: @b 1.0.22
+Version: @b 1.0.32
 
 Introduction
 ============
@@ -29,7 +29,7 @@ The following file formats are supported:
 | IQW (IIIQQQ)	| .iqw	          | A file that contains Float32 data in a binary format ( first all I values are stored, followed by all Q values ). The file does not contain any additional header information. Note that I and Q data are first buffered to temporary files and are merged when calling close(). Prefer IQW-format with data order IQIQIQ. The data order has to be changed before readOpen or writeOpen is called. |
 | IQW (IQIQIQ)	| .iqw	          | A file that contains Float32 data in a binary format ( values are stored in interleaved format, starting with the first I value ). The file does not contain any additional header information. The data order has to be changed before readOpen or writeOpen is called. |
 | WV (IQIQIQ) 	| .wv	          | A file that contains INT16 data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in signal generators.|
-| IQX (IQIQIQ)	| .iqx	          | A file that contains INT16 data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in device IQW.|
+| IQX (IQIQIQ)	| .iqx	          | A file that contains INT16 or INT12 data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in device IQW.|
 | AID (IQIQIQ)	| .iqx	          | A file that contains I/Q data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in AMMOS project.|
 | CSV 					| .csv	          | A file containing I/Q data in comma-separated values format (CSV). The comma-separator used can either be a semicolon or a comma, depending on the decimal separator used to save floating-point values (either dot or comma). Additional meta data can be saved. For details see class @ref rohdeschwarz.mosaik.dataimportexport.IqCsv "Csv".|
 | Matlab v4			| .mat	          | A file containing I/Q data in matlab file format v4. Channel related information is stored in matlab variables with names starting with 'ChX_'. 'X' represents the number of the channel with a lower bound of 1, e.g. variable Ch1_ChannelName contains the name of the first channel. The corresponding data is contained in ChX_Data. Optional user data can be saved to variables named UserDataX, where 'X' starts at 0. Variable UserData_Count contains the number of UserData variables. For compatibility reasons user data needs to be saved as a 2xN char array, where the first row contains the key of the user data and the second row the actual value. Both rows must have the same column count and are therefore right-padded with white spaces. Variables can be written in arbitary order to the *.mat files. For details see @ref rohdeschwarz.mosaik.dataimportexport.IqMatlab "IqMatlab". @n Limitations: @n In general, the file format is limited to a maximum of 2GB. A maximum of 100000000 can be stored in a single variable. Consequently, complex data can contain up to 50000000 samples. Note that all data is loaded into RAM before being written to the .mat file. Make sure to provide sufficient free memory. | 

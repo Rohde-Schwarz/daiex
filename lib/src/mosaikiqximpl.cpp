@@ -30,6 +30,7 @@
 
 #include "mosaikiqximpl.h"
 #include <iqxformat/iqxfile.h>
+#include "../iqxformat/src/iqbitconverter.h"
 
 namespace rohdeschwarz
 {
@@ -201,7 +202,7 @@ void MosaikIqxImpl::assembleIqxMetaData()
     if (triggers.size() > 0)
     {
       const size_t MaxTrig = 3600;
-      int maxTrig = 0;
+      size_t maxTrig = 0;
       string key = "Ch" + to_string(i + 1) + "_MarkerInfo[XML]";
       string value = "<ArrayOfEvents length = \"" + std::to_string(min(triggers.size(), MaxTrig)) + "\">\n";
       for (const auto &trigger : triggers)
@@ -286,12 +287,12 @@ int MosaikIqxImpl::writeOpen(IqDataFormat format, size_t nofArrays, const string
   m_channelInfo = channelInfos;
   m_metaData = *metadata;
 
-  vector<pair<string, IqxStreamDescDataIQ16>> descriptions;
+  vector<pair<string, IqxStreamDescDataIQ>> descriptions;
 
   for (const auto &info : channelInfos)
   {
     // translate from DaiLib to IQX: generate stream descriptions from channel infos
-    IqxStreamDescDataIQ16 description;
+    IqxStreamDescDataIQ description;
     string source = info.getChannelName();
     //sources.push_back(source);
 
@@ -306,9 +307,9 @@ int MosaikIqxImpl::writeOpen(IqDataFormat format, size_t nofArrays, const string
 	description.bandwidth_variable = false;
 	description.center_frequency = info.getFrequency();
 	description.centfreq_valid = true;
-	description.resolution = 0;
+	description.resolution = 16;
 	description.resolution_valid = false;
-    descriptions.push_back(make_pair(source,description));
+   descriptions.push_back(make_pair(source,description));
 
     try
     {
@@ -316,11 +317,11 @@ int MosaikIqxImpl::writeOpen(IqDataFormat format, size_t nofArrays, const string
     }
     catch (const exception&)
     {
-      return ErrorCodes::InternalError;
+      return ErrorCodes::FileOpenError;
     }
     catch (...)
     {
-      return ErrorCodes::InternalError;
+      return ErrorCodes::FileOpenError;
     }
 
     return 0;
@@ -544,17 +545,18 @@ int MosaikIqxImpl::readArrayAll(const std::string& arrayName, std::vector<float>
 	{
 		return ErrorCodes::InternalError;
 	}
+   map<size_t, IqxStreamType> streamtypes = m_piqx->getStreamTypes();
+
 
   bool isI = arrayName.find("_I", arrayName.size() - 2) != string::npos;
 
-#if 1 // new implementation with cue frame
-  int64_t actSample = offset;
+  int64_t actPair = offset;
   // nofValues in samples, we copy only I or Q
-  size_t count = nofValues;
-  while (count > 0)
+  int64_t pairCount = nofValues;
+  while (pairCount > 0)
   {
     // use cue entries to calculate the frame(s) to read
-    auto cue = m_piqx->getCueEntry(streamNo, m_piqx->getTimestampFromSample(streamNo, actSample));
+    auto cue = m_piqx->getCueEntry(streamNo, m_piqx->getTimestampFromSample(streamNo, actPair));
     // read the preamble
     portable_lseek(*m_piqx, cue.offset, SEEK_SET);
     IqxPreamble preamble;
@@ -568,37 +570,100 @@ int MosaikIqxImpl::readArrayAll(const std::string& arrayName, std::vector<float>
       return ErrorCodes::InternalError;
     }
 
-    // calculate the first sample in the frame
-    int64_t frameSample = m_piqx->getSampleFromTimestamp(streamNo, cue.timestamp);
+	 //============================================================================
+	 // 12 Bit:
+	 // from iqbitconverter we need
+	 // - conv12to16_dstsize
+	 // - conv12to16
+	 /*
+    12 Bit Frame
+       --32 Byte- DIGIQ_WORD_SIZE ----------------- 256 Bit ----------- - ==> 10 IQ Samples ist kleinste Einheit
+       -- 16 Byte-------------------- 16 Byte--------------------------
+
+       -- 5 * 2 * 12 Bit + 8 Bit reserved | 5 * 2 * 12 Bit + 8 Bit reserved---- -
+       = > IQIQIQIQIQ R                   | IQIQIQIQIQ R
+       = > 120 Bit + 8                    | 120 Bit + 8
+
+	 */
+
+    // calculate the first pair in the frame
+    int64_t firstPairInFrame = m_piqx->getSampleFromTimestamp(streamNo, cue.timestamp);
 
     // skip header
     portable_lseek(*m_piqx, preamble.headsize, SEEK_CUR);
 
+    //                                 ==================== 16 Bit IQ ========================================================      
     //                                 Frame iqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiqiq
     //                                       |                     values  ---  preamble.datasize / 2  ---
     //                                       |                     samples ---  preamble.datasize / 4  ---
-    //                                       frameSample                                                          
-    //                                                      actSample  
-    // read samples if you need more
-    // first sample to read
-    // two values are one sample
-    int64_t firstValue = (actSample - frameSample) * 2;
-    int64_t lastValue = min(firstValue + count * 2, preamble.datasize / 2) - 1;
-    // calculate the new actSample for the next while iteration 
-    actSample += (lastValue - firstValue + 1) / 2;
+    //                                       firstPairInFrame                                                          
+    //                                                      actPair  
+    // read pairs if you need more
+    // first pair to read
+    // two values are one pair
+    uint32_t resolution = (streamtypes.at(preamble.streamnum) == IQX_STREAM_TYPE_IQDATA16) ? 16 : 12;
 
-    // seek to FirstValue which is int16 so mult by 2                   
-    portable_lseek(*m_piqx, firstValue * 2, SEEK_CUR);
-    const size_t size = lastValue - firstValue + 1;
-    // read data
-    auto data = unique_ptr<int16_t[]>(new int16_t[size]);
-    // read only as much data of the data part of the stream as we need
-    if (portable_read(*m_piqx, data.get(), static_cast<unsigned int>(size*2)) < static_cast<int>(size*2))
+    int64_t PairsInFrame = preamble.datasize / 4;
+    if (resolution == 12) PairsInFrame = IqBitConverter::conv12to16_dstsize(preamble.datasize) / 4;
+    int64_t lastPairInFrame = firstPairInFrame + PairsInFrame - 1;
+    int64_t firstUseablePairInFrame = actPair;
+    int64_t offsetOfFirstUseablePairInFrame = actPair - firstPairInFrame;
+    int64_t lastUseablePairInFrame = min(firstUseablePairInFrame + pairCount - 1, lastPairInFrame);
+    int64_t useablePairsInFrame = lastUseablePairInFrame - actPair + 1;
+    //size_t useableValuesInFrame = useablePairsInFrame * 2;
+
+    // leading and trailing pairs for 12 Bit data (aligned to 10 Samples (32 Bit))
+    size_t leadingPairs = 0;
+    size_t trailingPairs = 0;
+    if (resolution == 12)
     {
-      return ErrorCodes::InternalError;
+       leadingPairs = offsetOfFirstUseablePairInFrame % 10;
+       size_t modTrailingPairs = (offsetOfFirstUseablePairInFrame + pairCount) % 10;
+       if (modTrailingPairs != 0) 
+       { 
+          trailingPairs = 10 - modTrailingPairs;
+       }
+    }
+    // calculate the new actPair for the next while iteration 
+    actPair += useablePairsInFrame;
+
+
+    const size_t size = (useablePairsInFrame + leadingPairs + trailingPairs) * 2;
+    const size_t leadingValues = leadingPairs * 2;
+
+    // buffer for 16 Bit data
+    auto data = unique_ptr<int16_t[]>(new int16_t[size]);
+
+    if (resolution == 12)
+    {
+       // auf DIGIQ_WORD_SIZE aufgerundet lesen und dann in data konvertieren
+       const size_t size12 = (useablePairsInFrame + leadingPairs + trailingPairs) / 10 * DIGIQ_WORD_SIZE;
+       // offset 
+       portable_lseek(*m_piqx, (offsetOfFirstUseablePairInFrame - leadingPairs) / 10 * DIGIQ_WORD_SIZE, SEEK_CUR);
+       auto data12 = unique_ptr<uint8_t[]>(new uint8_t[size12]);
+       if (portable_read(*m_piqx, data12.get(), static_cast<unsigned int>(size12)) < static_cast<int>(size12))
+       {
+          return ErrorCodes::InternalError;
+       }
+       if (IqBitConverter::conv12to16(data12.get(), data.get(), size12) == -1)
+       {
+          return ErrorCodes::InternalError;
+       }
+    }
+    else
+    {
+       // seek to First Pair which is 2 * int16 so mult by 4
+       portable_lseek(*m_piqx, offsetOfFirstUseablePairInFrame * 4, SEEK_CUR);
+       // read only as much data of the data part of the stream as we need
+       if (portable_read(*m_piqx, data.get(), static_cast<unsigned int>(size * 2)) < static_cast<int>(size * 2))
+       {
+          return ErrorCodes::InternalError;
+       }
     }
 
-    for (size_t value = isI?0:1  /*firstValue*/; value < size  /*lastValue*/; value = value + 2)
+    int64_t firstValue = isI ? leadingValues : leadingValues + 1;
+    int64_t lastValue = firstValue + useablePairsInFrame * 2;
+    for (int64_t value = firstValue; value <= lastValue; value = value + 2)
     {
       // convert and copy
       switch (rw)
@@ -635,163 +700,16 @@ int MosaikIqxImpl::readArrayAll(const std::string& arrayName, std::vector<float>
       }
       }
       // convert and copy end
-      count--;
-      if (count == 0)
+      pairCount--;
+      if (pairCount == 0)
       {
         return 0;
       }
     }
   }
-#else // old implementation
-	// readBegin8 is the data byte which is to read first:
-	// if I have an offset of 1000 symbols, then there are 1000 IQ symbols to be skipped.
-	// readBegin is the 0 + 1000 * 4. If the QArray has to be read, then if have to add 2 bytes to readBegin
-	size_t readBegin8 = offset * 4;
-	if (!isI)
-	{
-		readBegin8 += 2;
-	}
-	//                                            IQ = 4 Byte
-	size_t readEnd8 = readBegin8 + (nofValues - 1) * 4;
-	size_t frameDataBegin8 = 0;
-	size_t frameDataEnd8 = 0;
-	bool ready = false;
-	bool first = true;
-	portable_lseek(*m_piqx, m_piqx->getPayloadOffset(), SEEK_SET);
-	while (!ready)
-	{
-		IqxPreamble preamble;
-		if (portable_read(*m_piqx, &preamble, sizeof(preamble)) < static_cast<ssize_t>(sizeof(preamble)))
-		{
-			return ErrorCodes::InternalError;
-		}
-
-		if (memcmp(&preamble.sync, iqxsync, sizeof(iqxsync)))
-		{
-			return ErrorCodes::InternalError;
-		}
-
-		switch (preamble.frametype)
-		{
-		case IQX_FRAME_TYPE_IQDATA:
-		{
-			// calculate frames/stream symbols/stream
-			if (static_cast<size_t>(preamble.streamnum) == streamNo)
-			{
-				if (first)
-				{
-					first = false;
-				}
-				else
-				{
-					frameDataBegin8 = frameDataEnd8 + 1;
-				}
-				frameDataEnd8 = frameDataBegin8 + preamble.datasize - 1;
-				if (readBegin8 >= frameDataBegin8 && readBegin8 <= frameDataEnd8)
-				{
-					// skip header
-					portable_lseek(*m_piqx, preamble.headsize, SEEK_CUR);
-					// read data
-					auto data = unique_ptr<int16_t[]>(new int16_t[preamble.datasize / 2]);
-					if (portable_read(*m_piqx, data.get(), static_cast<unsigned int>(preamble.datasize)) < static_cast<int>(preamble.datasize))
-					{
-						return ErrorCodes::InternalError;
-					}
-
-					switch (rw)
-					{
-					case rFloatVector:
-					{
-						// now copy every 2nd int16 and convert it to float32
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							float f = data[(readBegin8 - frameDataBegin8) / 2];
-							f = f / INT16_MAX;
-							vfValues.push_back(f);
-							readBegin8 += 4;
-						}
-						break;
-					}
-					case rDoubleVector:
-					{
-						// now copy every 2nd int16 and convert it to float32
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							double d = data[(readBegin8 - frameDataBegin8) / 2];
-							d = d / INT16_MAX;
-							vdValues.push_back(d);
-							readBegin8 += 4;
-						}
-						break;
-					}
-					case rFloatPointer:
-					{
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							float f = data[(readBegin8 - frameDataBegin8) / 2];
-							f = f / INT16_MAX;
-							*fPtr = f;
-							fPtr++;
-							readBegin8 += 4;
-						}
-						break;
-					}
-					case rDoublePointer:
-					{
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							double d = data[(readBegin8 - frameDataBegin8) / 2];
-							d = d / INT16_MAX;
-							*dPtr = d;
-							dPtr++;
-							readBegin8 += 4;
-						}
-						break;
-					}
-					}
-					if (readBegin8 > readEnd8)
-					{
-						return 0;
-					}
-					else
-					{
-						// skip rest of frame: skip the tail
-						size_t tailSize = preamble.framesize - sizeof(preamble) - preamble.headsize - preamble.datasize;
-						portable_lseek(*m_piqx, tailSize, SEEK_CUR);
-					}
-				}
-				else
-				{
-					// skip rest of frame
-					portable_lseek(*m_piqx, preamble.framesize - sizeof(preamble), SEEK_CUR);
-				}
-			}
-			else
-			{
-				// skip rest of frame
-				portable_lseek(*m_piqx, preamble.framesize - sizeof(preamble), SEEK_CUR);
-			}
-
-			break;
-		}
-		case IQX_FRAME_TYPE_PAYLOADEND:
-		{
-			// some data is missing
-			return ErrorCodes::InternalError;
-		}
-		default:
-		{
-			// skip rest of frame
-			portable_lseek(*m_piqx, preamble.framesize - sizeof(preamble), SEEK_CUR);
-		}
-		break;
-		}
-	}
-#endif
 	return 0;
 }
 
-#if 1 // new implementation
 int MosaikIqxImpl::readChannelAll(const std::string& channelName, std::vector<float>& vfValues, std::vector<double>& vdValues, float* fValues, double* dValues, size_t nofValues, size_t offset, rType rw)
 {
   float *fPtr = fValues;
@@ -820,267 +738,143 @@ int MosaikIqxImpl::readChannelAll(const std::string& channelName, std::vector<fl
     vdValues.reserve(nofValues * 2);
   }
 
-  int64_t actSample = offset;
+  map<size_t, IqxStreamType> streamtypes = m_piqx->getStreamTypes();
+
+  int64_t actPair = offset;
   // nofValues in samples, each sample has I and Q, so mult by 2 
-  size_t count = nofValues*2;
-  while (count > 0)
+  int64_t pairCount = nofValues;
+  while (pairCount > 0)
   {
-    // use cue entries to calculate the frame(s) to read
-    auto cue = m_piqx->getCueEntry(streamNo, m_piqx->getTimestampFromSample(streamNo, actSample));
-    // read the preamble
-    portable_lseek(*m_piqx, cue.offset, SEEK_SET);
-    IqxPreamble preamble;
-    // read the preamble
-    if (portable_read(*m_piqx, &preamble, sizeof(preamble)) < static_cast<ssize_t>(sizeof(preamble)))
-    {
-      return ErrorCodes::InternalError;
-    }
-    if (memcmp(&preamble.sync, iqxsync, sizeof(iqxsync)))
-    {
-      return ErrorCodes::InternalError;
-    }
+     // use cue entries to calculate the frame(s) to read
+     auto cue = m_piqx->getCueEntry(streamNo, m_piqx->getTimestampFromSample(streamNo, actPair));
+     // read the preamble
+     portable_lseek(*m_piqx, cue.offset, SEEK_SET);
+     IqxPreamble preamble;
+     // read the preamble
+     if (portable_read(*m_piqx, &preamble, sizeof(preamble)) < static_cast<ssize_t>(sizeof(preamble)))
+     {
+        return ErrorCodes::InternalError;
+     }
+     if (memcmp(&preamble.sync, iqxsync, sizeof(iqxsync)))
+     {
+        return ErrorCodes::InternalError;
+     }
 
-    // calculate the first sample in the frame
-    int64_t frameSample = m_piqx->getSampleFromTimestamp(streamNo, cue.timestamp);
+     // calculate the first pair in the frame
+     int64_t firstPairInFrame = m_piqx->getSampleFromTimestamp(streamNo, cue.timestamp);
+     // skip header
+     portable_lseek(*m_piqx, preamble.headsize, SEEK_CUR);
+     // read pairs if you need more
+     // first pair to read
+     // two values are one pair
+     uint32_t resolution = (streamtypes.at(preamble.streamnum) == IQX_STREAM_TYPE_IQDATA16) ? 16 : 12;
 
-    // skip header
-    portable_lseek(*m_piqx, preamble.headsize, SEEK_CUR);
+     int64_t PairsInFrame = preamble.datasize / 4;
+     if (resolution == 12) PairsInFrame = IqBitConverter::conv12to16_dstsize(preamble.datasize) / 4;
+     int64_t lastPairInFrame = firstPairInFrame + PairsInFrame - 1;
+     int64_t firstUseablePairInFrame = actPair;
+     int64_t offsetOfFirstUseablePairInFrame = actPair - firstPairInFrame;
+     int64_t lastUseablePairInFrame = min(firstUseablePairInFrame + pairCount - 1, lastPairInFrame);
+     int64_t useablePairsInFrame = lastUseablePairInFrame - actPair + 1;
+     size_t useableValuesInFrame = useablePairsInFrame * 2;
 
-    // read samples if you need more
-    // first sample to read
-    int64_t firstValue = (actSample - frameSample) * 2;
-    int64_t lastValue = min(firstValue + count * 2, preamble.datasize / 2) - 1;
-    // calculate the new actSample for the next while iteration 
-    actSample += (lastValue - firstValue + 1) / 2;
-    
-    // seek to FirstValue which is int16 so mult by 2                   
-    portable_lseek(*m_piqx, firstValue * 2, SEEK_CUR);
-    const size_t size = lastValue - firstValue + 1;
-    // read data
-    auto data = unique_ptr<int16_t[]>(new int16_t[size]);
-    // read only as much data of the data part of the stream as we need
-    if (portable_read(*m_piqx, data.get(), static_cast<unsigned int>(size*2)) < static_cast<int>(size*2))
-    {
-      return ErrorCodes::InternalError;
-    }
-    
-    for (size_t value = 0; value < size; value++)
-    {
-      // convert and copy
-      switch (rw)
-      {
+     // leading and trailing pairs for 12 Bit data (aligned to 10 Samples (32 Bit))
+     size_t leadingPairs = 0;
+     size_t trailingPairs = 0;
+     if (resolution == 12)
+     {
+        leadingPairs = offsetOfFirstUseablePairInFrame % 10;
+        size_t modTrailingPairs = (offsetOfFirstUseablePairInFrame + pairCount) % 10;
+        if (modTrailingPairs != 0)
+        {
+           trailingPairs = 10 - modTrailingPairs;
+        }
+     }
+     // calculate the new actPair for the next while iteration 
+     actPair += useablePairsInFrame;
+
+
+     const size_t size = (useablePairsInFrame + leadingPairs + trailingPairs) * 2;
+     const size_t leadingValues = leadingPairs * 2;
+
+     // buffer for 16 Bit data
+     auto data = unique_ptr<int16_t[]>(new int16_t[size]);
+
+     if (resolution == 12)
+     {
+        // auf DIGIQ_WORD_SIZE aufgerundet lesen und dann in data konvertieren
+        const size_t size12 = (useablePairsInFrame + leadingPairs + trailingPairs) / 10 * DIGIQ_WORD_SIZE;
+        // offset 
+        portable_lseek(*m_piqx, (offsetOfFirstUseablePairInFrame - leadingPairs) / 10 * DIGIQ_WORD_SIZE, SEEK_CUR);
+        auto data12 = unique_ptr<uint8_t[]>(new uint8_t[size12]);
+        if (portable_read(*m_piqx, data12.get(), static_cast<unsigned int>(size12)) < static_cast<int>(size12))
+        {
+           return ErrorCodes::InternalError;
+        }
+        if (IqBitConverter::conv12to16(data12.get(), data.get(), size12) == -1)
+        {
+           return ErrorCodes::InternalError;
+        }
+     }
+     else
+     {
+        // seek to First Pair which is 2 * int16 so mult by 4
+        portable_lseek(*m_piqx, offsetOfFirstUseablePairInFrame * 4, SEEK_CUR);
+        // read only as much data of the data part of the stream as we need
+        if (portable_read(*m_piqx, data.get(), static_cast<unsigned int>(size * 2)) < static_cast<int>(size * 2))
+        {
+           return ErrorCodes::InternalError;
+        }
+     }
+
+     int64_t firstValue = leadingValues;
+     int64_t lastValue = firstValue + useableValuesInFrame -1;
+     for (int64_t value = firstValue; value <= lastValue; value++)
+     {
+        // convert and copy
+        switch (rw)
+        {
         case rFloatVector:
         {
-          float f = data[value];
-          f = f / INT16_MAX;
-          vfValues.push_back(f);
-          break;
+           float f = data[value];
+           f = f / INT16_MAX;
+           vfValues.push_back(f);
+           break;
         }
         case rDoubleVector:
         {
-          double d = data[value];
-          d = d / INT16_MAX;
-          vdValues.push_back(d);
-          break;
+           double d = data[value];
+           d = d / INT16_MAX;
+           vdValues.push_back(d);
+           break;
         }
         case rFloatPointer:
         {
-          float f = data[value];
-          f = f / INT16_MAX;
-          *fPtr = f;
-          fPtr++;
-          break;
+           float f = data[value];
+           f = f / INT16_MAX;
+           *fPtr = f;
+           fPtr++;
+           break;
         }
         case rDoublePointer:
         {
-          double d = data[value];
-          d = d / INT16_MAX;
-          *dPtr = d;
-          dPtr++;
-          break;
+           double d = data[value];
+           d = d / INT16_MAX;
+           *dPtr = d;
+           dPtr++;
+           break;
         }
-      }
-      // convert and copy end
-      count--;
-      if (count == 0)
-      {
+        } // end switch
+        // convert and copy end
+     } // end for
+     pairCount -= useablePairsInFrame;
+     if (pairCount == 0)
+     {
         return 0;
-      }
-    }
+     }
   }
   return 0;
 }
-#else // old implementation
-int MosaikIqxImpl::readChannelAll(const std::string& channelName, std::vector<float>& vfValues, std::vector<double>& vdValues, float* fValues, double* dValues, size_t nofValues, size_t offset, rType rw)
-{
-	float *fPtr = fValues;
-	double *dPtr = dValues;
-	auto streamNo = m_piqx->getStreamNo(channelName);
-	if (m_piqx->getStreamNoOfSamples(streamNo) < (offset + nofValues))
-	{
-		return ErrorCodes::InternalError;
-	}
-	if (rw == rFloatVector)
-	{
-		vfValues.clear();
-		if (vfValues.max_size() < nofValues * 2)
-		{
-			return ErrorCodes::InternalError;
-		}
-		vfValues.reserve(nofValues * 2);
-	}
-	if (rw == rDoubleVector)
-	{
-		vdValues.clear();
-		if (vdValues.max_size() < nofValues * 2)
-		{
-			return ErrorCodes::InternalError;
-		}
-		vdValues.reserve(nofValues * 2);
-	}
-
-	size_t readBegin8 = offset * 4;
-
-	//                             Q              IQ = 4 Byte
-	size_t readEnd8 = readBegin8 + 2 + (nofValues - 1) * 4;
-	size_t frameDataBegin8 = 0;
-	size_t frameDataEnd8 = 0;
-	bool ready = false;
-	bool first = true;
-	portable_lseek(*m_piqx, m_piqx->getPayloadOffset(), SEEK_SET);
-	while (!ready)
-	{
-		IqxPreamble preamble;
-		if (portable_read(*m_piqx, &preamble, sizeof(preamble)) < static_cast<ssize_t>(sizeof(preamble)))
-		{
-			return ErrorCodes::InternalError;
-		}
-
-		if (memcmp(&preamble.sync, iqxsync, sizeof(iqxsync)))
-		{
-			return ErrorCodes::InternalError;
-		}
-
-		switch (preamble.frametype)
-		{
-		case IQX_FRAME_TYPE_IQDATA:
-		{
-			// calculate frames/stream samples/stream
-			if (static_cast<size_t>(preamble.streamnum) == streamNo)
-			{
-				if (first)
-				{
-					first = false;
-				}
-				else
-				{
-					frameDataBegin8 = frameDataEnd8 + 1;
-				}
-				frameDataEnd8 = frameDataBegin8 + preamble.datasize - 1;
-				if (readBegin8 >= frameDataBegin8 && readBegin8 <= frameDataEnd8)
-				{
-					// skip header
-					portable_lseek(*m_piqx, preamble.headsize, SEEK_CUR);
-					// read data
-					auto data = unique_ptr<int16_t[]>(new int16_t[preamble.datasize / 2]);
-					if (portable_read(*m_piqx, data.get(), static_cast<unsigned int>(preamble.datasize)) < static_cast<int>(preamble.datasize))
-					{
-						return ErrorCodes::InternalError;
-					}
-
-					switch (rw)
-					{
-					case rFloatVector:
-					{
-						// now copy every int16 and convert it to float32
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							float f = data[(readBegin8 - frameDataBegin8) / 2];
-							f = f / INT16_MAX;
-							vfValues.push_back(f);
-							readBegin8 += 2;
-						}
-						break;
-					}
-					case rDoubleVector:
-					{
-						// now copy every int16 and convert it to double
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							double d = data[(readBegin8 - frameDataBegin8) / 2];
-							d = d / INT16_MAX;
-							vdValues.push_back(d);
-							readBegin8 += 2;
-						}
-						break;
-					}
-					case rFloatPointer:
-					{
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							float f = data[(readBegin8 - frameDataBegin8) / 2];
-							f = f / INT16_MAX;
-							*fPtr = f;
-							fPtr++;
-							readBegin8 += 2;
-						}
-						break;
-					}
-					case rDoublePointer:
-					{
-						// now copy every int16 and convert it to double
-						while (readBegin8 <= frameDataEnd8 && readBegin8 <= readEnd8)
-						{
-							double d = data[(readBegin8 - frameDataBegin8) / 2];
-							d = d / INT16_MAX;
-							*dPtr = d;
-							dPtr++;
-							readBegin8 += 2;
-						}
-						break;
-					}
-					}
-
-					if (readBegin8 > readEnd8)
-					{
-						return 0;
-					}
-					else
-					{
-						// skip rest of frame: skip the tail
-						size_t tailSize = preamble.framesize - sizeof(preamble) - preamble.headsize - preamble.datasize;
-						portable_lseek(*m_piqx, tailSize, SEEK_CUR);
-					}
-				}
-				else
-				{
-					// skip rest of frame
-					portable_lseek(*m_piqx, preamble.framesize - sizeof(preamble), SEEK_CUR);
-				}
-			}
-			else
-			{
-				// skip rest of frame
-				portable_lseek(*m_piqx, preamble.framesize - sizeof(preamble), SEEK_CUR);
-			}
-
-			break;
-		}
-		case IQX_FRAME_TYPE_PAYLOADEND:
-		{
-			return ErrorCodes::InternalError;
-		}
-		default:
-		{
-			// skip rest of frame
-			portable_lseek(*m_piqx, preamble.framesize - sizeof(preamble), SEEK_CUR);
-		}
-		break;
-		}
-	}
-	return 0;
-}
-#endif
 
 int MosaikIqxImpl::writeIqFramesFromArrays(int64_t streamno, float * fArrayI, float * fArrayQ, double * dArrayI, double * dArrayQ, int64_t samples, wType w)
 {

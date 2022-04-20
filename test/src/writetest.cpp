@@ -592,3 +592,41 @@ TYPED_TEST(WriteTest, DISABLED_WriteRealChannelWithoutTmpFile)
   remove(filename.c_str());
 }
 
+class WriteOpenTest : public ::testing::Test
+{
+};
+TEST_F(WriteOpenTest, ReadOnlyMediumTest)
+{
+#ifdef WIN32
+   map<string, string> metaDataWrite_;
+
+   metaDataWrite_.insert(make_pair("Key1<>", "Wert1"));
+   metaDataWrite_.insert(make_pair("2 Key", "Wert2"));
+   metaDataWrite_.insert(make_pair("Rohde&Schwarz", "Wert3"));
+
+   const string filename = "s://writeOpenTest.xyz";
+   vector<ChannelInfo> channelInfos;
+   channelInfos.push_back(ChannelInfo("Channel1", 1E6, 2E7));
+
+   IqCsv iqcsv(filename);
+   ASSERT_EQ(iqcsv.writeOpen(IqDataFormat::Complex, 1, "test", "", channelInfos, &metaDataWrite_), ErrorCodes::FileOpenError);
+
+   Iqw iqw(filename);
+   ASSERT_EQ(iqw.writeOpen(IqDataFormat::Complex, 1, "test", "", channelInfos, &metaDataWrite_), ErrorCodes::FileOpenError);
+
+   Iqx iqx(filename);
+   ASSERT_EQ(iqx.writeOpen(IqDataFormat::Complex, 1, "test", "", channelInfos, &metaDataWrite_), ErrorCodes::FileOpenError);
+
+   IqTar iqt(filename);
+   ASSERT_EQ(iqt.writeOpen(IqDataFormat::Complex, 1, "test", "", channelInfos, &metaDataWrite_), ErrorCodes::FileOpenError);
+
+   IqMatlab iqm(filename);
+   ASSERT_EQ(iqm.writeOpen(IqDataFormat::Complex, 1, "test", "", channelInfos, &metaDataWrite_), ErrorCodes::FileOpenError);
+
+   Aid aid(filename);
+   ASSERT_EQ(aid.writeOpen(IqDataFormat::Complex, 1, "test", "", channelInfos, &metaDataWrite_), ErrorCodes::FileOpenError);
+
+#endif // WIN32
+}
+
+

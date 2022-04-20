@@ -28,6 +28,7 @@
 
 #include <numeric>
 
+#include "common.h"
 #include "wvpimpl.h"
 
 namespace rohdeschwarz
@@ -84,11 +85,22 @@ namespace rohdeschwarz
 				double clock;
 				m_wv.GetParam(IWvIn::eParamClock, &clock);
 				//printf("Clock: %f\n", clock);
-				double rms, peak;
-				m_wv.GetParam(IWvIn::eParamLevelOffset, &rms, &peak);
+				double rmsOffs, peakOffs, mSegPeakOffs;
+				m_wv.GetParam(IWvIn::eParamLevelOffset, &rmsOffs, &peakOffs);
 				//printf("Level RMS: %f\n", rms);
-				m_wv.GetParam(IWvIn::eParamMSegLevelOffsetPeak, &peak);
-				//printf("Level Peak: %f\n", peak);
+				m_wv.GetParam(IWvIn::eParamMSegLevelOffsetPeak, &mSegPeakOffs);
+				//printf("MSegLevelOffsetPeak: %f\n", mSegPeak);
+				double rfRmsLevel;
+            m_wv.GetParam(IWvIn::eParamRfRmsLevel, &rfRmsLevel);
+				if (rfRmsLevel != 0.0)
+            {
+               //printf("RfRmsLevel: %f\n", rfRmsLevel);
+               float fullScale = (10.0 * log10(1.0 / 50.0) + 30.0);
+               float fileRms = fullScale - rmsOffs;
+               m_scaleFactor = pow(10, (rfRmsLevel - fileRms) / 20.0);
+               //printf("m_scaleFactor: %f\n", m_scaleFactor);
+               m_multiplicator = m_scaleFactor / INT16_MAX;
+				}
 				int scrambled;
 				m_wv.GetParam(IWvIn::eParamIsScrambled, &scrambled);
 				m_scrambled = (scrambled == 1);
@@ -121,11 +133,11 @@ namespace rohdeschwarz
 				}
 				m_metaData.insert(make_pair("Type", Type));
 				m_metaData.insert(make_pair("Comment", Comment));
-				m_metaData.insert(make_pair("RMS", std::to_string(rms)));
-				m_metaData.insert(make_pair("Peak", std::to_string(peak)));
+				m_metaData.insert(make_pair("RMSOffset_dB", std::to_string(rmsOffs)));
+				m_metaData.insert(make_pair("PeakOffset_dB", std::to_string(peakOffs)));
 				m_metaData.insert(make_pair("mSegLength", std::to_string(mSegLength)));
 
-				m_channelInfo.push_back(ChannelInfo("Channel1", clock, 1000, m_samples));
+				m_channelInfo.push_back(ChannelInfo("Channel1", clock, 0, m_samples));
 				arrayNames.push_back("Channel1");
 
 				return 0;
@@ -155,6 +167,11 @@ namespace rohdeschwarz
 			int Wv::Impl::writeOpen(IqDataFormat , size_t , const string& , const string& ,
 				const vector<ChannelInfo>& , const map<string, std::string>* )
 			{
+            if (!Platform::isFileAccessible(m_filename))
+            {
+               return ErrorCodes::FileOpenError;
+            }
+
 				return 1;
 			}
 
@@ -324,7 +341,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							float f = data[readBegin8 / 2];
-							f = f / INT16_MAX;
+							f = f * m_multiplicator;
 							vfValues.push_back(f);
 							readBegin8 += 4;
 						}
@@ -336,7 +353,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							double d = data[readBegin8 / 2];
-							d = d / INT16_MAX;
+							d = d * m_multiplicator;
 							vdValues.push_back(d);
 							readBegin8 += 4;
 						}
@@ -347,7 +364,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							float f = data[readBegin8 / 2];
-							f = f / INT16_MAX;
+							f = f * m_multiplicator;
 							*fPtr = f;
 							fPtr++;
 							readBegin8 += 4;
@@ -359,7 +376,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							double d = data[readBegin8 / 2];
-							d = d / INT16_MAX;
+							d = d * m_multiplicator;
 							*dPtr = d;
 							dPtr++;
 							readBegin8 += 4;
@@ -414,7 +431,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							float f = data[readBegin8 / 2];
-							f = f / INT16_MAX;
+							f = f * m_multiplicator;
 							vfValues.push_back(f);
 							readBegin8 += 2;
 						}
@@ -426,7 +443,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							double d = data[readBegin8 / 2];
-							d = d / INT16_MAX;
+							d = d * m_multiplicator;
 							vdValues.push_back(d);
 							readBegin8 += 2;
 						}
@@ -437,7 +454,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							float f = data[readBegin8 / 2];
-							f = f / INT16_MAX;
+							f = f * m_multiplicator;
 							*fPtr = f;
 							fPtr++;
 							readBegin8 += 2;
@@ -450,7 +467,7 @@ namespace rohdeschwarz
 						while (readBegin8 <= readEnd8)
 						{
 							double d = data[readBegin8 / 2];
-							d = d / INT16_MAX;
+							d = d * m_multiplicator;
 							*dPtr = d;
 							dPtr++;
 							readBegin8 += 2;

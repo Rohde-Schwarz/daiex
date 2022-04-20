@@ -13,11 +13,6 @@
 	* See the License for the specific language governing permissions and
 	* limitations under the License.
 */
-/*******************************************************************************/
-/**
-@file iqxtypes.h
-@description type definitions for iqx file format
-* *******************************************************************************/
 
 #pragma once
 
@@ -60,6 +55,7 @@
 #define IQX_DATA_ALIGNMENT 4096ULL
 #define IQX_TRIGGER_ENTRY_ALIGNMENT 64ULL
 #define IQX_CUE_ENTRY_ALIGNMENT 32ULL
+#define IQX_OVERRUN_ENTRY_ALIGNMENT 32ULL
 
 /******************************************************************************/
 /** @brief IQX frame size = preamble + header + data + tail size */
@@ -141,6 +137,8 @@ typedef uint32_t IqxFrameType;
 #define IQX_FRAME_TYPE_EOF              ((IqxFrameType) 10)
 /// trigger frame
 #define IQX_FRAME_TYPE_TRIGGER          ((IqxFrameType) 11)
+/// overrun frame
+#define IQX_FRAME_TYPE_OVERRUN          ((IqxFrameType) 12)
 /// data frame
 #define IQX_FRAME_TYPE_DATA             ((IqxFrameType) 65536)
 /// unknown data frame
@@ -172,6 +170,7 @@ typedef uint32_t IqxStreamType;
 /// iq data frames
 #define IQX_STREAM_TYPE_IQDATA16        (IQX_FRAME_TYPE_IQDATA + 0)
 #define IQX_STREAM_TYPE_IQDATA8         (IQX_FRAME_TYPE_IQDATA + 1)
+#define IQX_STREAM_TYPE_IQDATA12        (IQX_FRAME_TYPE_IQDATA + 2)
 #define IQX_STREAM_TYPE_IQDATA24        (IQX_FRAME_TYPE_IQDATA + 3)
 #define IQX_STREAM_TYPE_IQDATA32        (IQX_FRAME_TYPE_IQDATA + 4)
 /// geolocation metadata frame
@@ -199,6 +198,12 @@ typedef int64_t IqxTriggerType;
 #define IQX_TRIGGER_TYPE_META_EXT1      ((IqxTriggerType) 13)
 #define IQX_TRIGGER_TYPE_META_EXT2      ((IqxTriggerType) 14)
 #define IQX_TRIGGER_TYPE_META_EXT3      ((IqxTriggerType) 15)
+#define IQX_TRIGGER_TYPE_ERR            ((IqxTriggerType) 16)  // overrun
+#define IQX_TRIGGER_TYPE_OVF            ((IqxTriggerType) 17)  // marker overflow
+#define IQX_TRIGGER_TYPE_USR1HI         ((IqxTriggerType) 18)  // Marker Replay GP0, Polarity high
+#define IQX_TRIGGER_TYPE_USR1LO         ((IqxTriggerType) 19)  // Marker Replay GP0, Polarity low
+#define IQX_TRIGGER_TYPE_USR2HI         ((IqxTriggerType) 20)  // Marker Replay GP1, Polarity high
+#define IQX_TRIGGER_TYPE_USR2LO         ((IqxTriggerType) 21)  // Marker Replay GP1, Polarity low
 // TODO define IQW device triggers
 
 /******************************************************************************/
@@ -219,8 +224,6 @@ typedef struct iqx_timespec
   /// nano seconds
   int64_t tv_nsec;
 } iqx_timespec;
-
-
 
 /// portable bool type
 typedef uint32_t iqx_bool;
@@ -381,9 +384,9 @@ typedef struct
   iqx_bool permission_valid;
   /// reserve some space to have 4k size
   uint8_t reserved[4020];
-} IqxStreamDescDataIQ16;
+} IqxStreamDescDataIQ;
 #pragma pack(pop)
-STATIC_ASSERT(sizeof(IqxStreamDescDataIQ16) == IQX_DATA_ALIGNMENT, "IqxStreamDescDataIQ unaligned size");
+STATIC_ASSERT(sizeof(IqxStreamDescDataIQ) == IQX_DATA_ALIGNMENT, "IqxStreamDescDataIQ unaligned size");
 
 /******************************************************************************/
 /// @brief generic data frame header (should not be used unless data type is unknown)
@@ -436,7 +439,8 @@ STATIC_ASSERT(sizeof(IqxGeolocationHeader) == IQX_DATA_ALIGNMENT, "IqxGeolocatio
 typedef struct
 {
   struct iqx_geolocation gpsdata;
-  uint8_t reserved[4032];
+  uint64_t sample;
+  uint8_t reserved[4024];
 } GeolocData;
 #pragma pack(pop)
 STATIC_ASSERT(sizeof(GeolocData) == IQX_DATA_ALIGNMENT, "GeolocData unaligned size");
@@ -567,3 +571,37 @@ typedef struct
 } IqxEofHeader;
 #pragma pack(pop)
 STATIC_ASSERT(sizeof(IqxEofHeader) == IQX_DATA_ALIGNMENT, "IqxEofHeader unaligned size");
+
+/******************************************************************************/
+/// @brief overrun frame header
+/// overrun frame data part is an array of IqxOverrunEntry
+/// anything else we need in the header?
+#pragma pack(push, 1)
+typedef struct
+{
+  /// number of overrun entries in data part
+  uint64_t numentries;
+  /// reserve some space to have 4k size
+  uint8_t reserved[4088];
+} IqxOverrunHeader;
+#pragma pack(pop)
+STATIC_ASSERT(sizeof(IqxOverrunHeader) == IQX_DATA_ALIGNMENT, "IqxOverrunHeader unaligned size");
+
+/******************************************************************************/
+/// @brief overrun entry
+/// define overrun types
+#pragma pack(push, 1)
+typedef struct
+{
+  /// recording time (relative to 00:00:00)
+  iqx_timespec timestamp;
+  /// set to IQX_STREAM_INDEPENDENT if unknown
+  int32_t streamnum;
+  /// align to 32 byte size
+  uint8_t reserved[12];
+} IqxOverrunEntry;
+#pragma pack(pop)
+STATIC_ASSERT(sizeof(IqxOverrunEntry) == IQX_OVERRUN_ENTRY_ALIGNMENT, "IqxOverrunEntry unaligned size");
+
+// maximum number of tirgger entries
+#define MAX_OVERRUN_ENTRIES ((IQX_FRAMESIZE_MAX - sizeof(IqxOverrunHeader) - sizeof(IqxPreamble)) / sizeof(IqxOverrunEntry))

@@ -6,12 +6,8 @@ file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/wrapper )
 
 set( CONFIGURATION ${CMAKE_BUILD_TYPE} )
 
-set( PLATFORM win32 )
-set( TARGET_PLATFORM x86 )
-if( ${CMAKE_GENERATOR} MATCHES "Win64" )
-  set( PLATFORM x64 )
-  set( TARGET_PLATFORM x64 )
-endif()
+set( PLATFORM x64 )
+set( TARGET_PLATFORM x64 )
 
 string( REPLACE "/" "\\" SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/src/" )
 

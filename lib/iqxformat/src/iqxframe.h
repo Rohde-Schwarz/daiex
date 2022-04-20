@@ -50,11 +50,12 @@ public:
   inline TTail& tail() {return *reinterpret_cast<TTail*>(tail_); }
 };
 
+/// @brief use the following generic types for frames that have fixed data size
 typedef struct {} IqxEmpty;
 /// file description frame
 typedef IqxFrame<IQX_FRAME_TYPE_FILEDESC, IqxFileDescHeader, IqxEmpty, IqxEmpty> IqxFileDescFrame;
 /// stream description frame
-typedef IqxFrame<IQX_FRAME_TYPE_STREAMDESC, IqxStreamDescHeader, IqxStreamDescDataIQ16, IqxEmpty> IqxStreamDescFrame;
+typedef IqxFrame<IQX_FRAME_TYPE_STREAMDESC, IqxStreamDescHeader, IqxStreamDescDataIQ, IqxEmpty> IqxStreamDescFrame;
 /// user text frame
 typedef IqxFrame<IQX_FRAME_TYPE_USERTEXT, IqxUserTextHeader, IqxEmpty, IqxEmpty> IqxUserTextFrame;
 /// tag frame

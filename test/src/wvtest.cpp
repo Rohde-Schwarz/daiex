@@ -34,6 +34,29 @@ public:
   static const IqDataOrder Order = order; 
 };
 
+#if 0
+TEST_F(WvTest, TestScaling)
+{
+   const string inFile = "c:/temp/sim_out.wv";
+   Wv wv(inFile);
+   vector<string> channelNames;
+   vector<ChannelInfo> channelInfos;
+   map<string, string> metadata;
+   int ret = wv.readOpen(channelNames);
+   EXPECT_EQ(ErrorCodes::Success, ret) << "file open failed";
+   EXPECT_EQ(channelNames.size(), 1) << "open bug";
+   ret = wv.getMetadata(channelInfos, metadata);
+   size_t samples = channelInfos[0].getSamples();
+   vector<float> valuesFV;
+   ret = wv.readChannel(channelNames[0], valuesFV, samples, 0);
+   vector<double> valuesDV;
+   ret = wv.readChannel(channelNames[0], valuesFV, samples, 0);
+   ret = wv.readChannel(channelNames[0], valuesDV, samples, 0);
+
+   wv.close();
+}
+#endif
+
 TEST_F(WvTest, TestMultipleOpen)
 {
   const string inFile = Common::TestDataDir + "FG_Sine_0.35MHz.wv";

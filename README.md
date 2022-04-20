@@ -88,21 +88,21 @@ Clone this repository to your local hard disc.
 
 ### Linux Ubuntu (18.04)
 
-* make sure that zlib and libarchive are available. If not, install via "sudo apt-get install zlib1g-dev libarchive-dev".
-* make sure doxygen is installed
+* make sure that zlib and libarchive and uuid-dev are available. If not, install via "sudo apt-get install zlib1g-dev libarchive-dev uuid-dev".
+  maybe you also need something like "sudo cp  /usr/lib/x86_64-linux-gnu/libz.so /usr/lib/x86_64-linux-gnu/libzlib.so"
+* make sure doxygen is installed (sudo apt-get install doxygen)
 * download https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar and unpack
 * Build hdf5:
     - create build folder "build" at the level of the "hdf5-1.10.0-patch1"-folder
     - cd "hdf5-1.10.0-patch1/build"
-    - set install path and configure project using cmake. E.g., install to folder "usr/local/hdf5":  "cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/hdf5 ../".
-    - make sure to enable ZLIB support (DHDF5_ENABLE_Z_LIB_SUPPORT)
+    - set install path and configure project using cmake. E.g., install to folder "usr/local/hdf5":  "cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/hdf5 -DHDF5_ENABLE_Z_LIB_SUPPORT=1 ../".
     - build target: "make"
     - install: "make install" -> hdf5 should now be available in "/usr/local/hdf5"
 * build libdai:
     - create build folder e.g. "build"
     - cd "build"
-    - set cmake prefix path: "export CMAKE_PREFIX_PATH={$HDF5_DIR}/share/cmake", where $HDF5_DIR is the installation folder of HDF5, e.g. "/usr/local/hdf5"
-    - configure project: "cmake -DCMAKE_BUILD_TYPE={Debug|Release} {$path_to_src_libdai_root}"
+    - set cmake prefix path: "export CMAKE_PREFIX_PATH=/usr/local/hdf5/share/cmake"
+    - configure project: "cmake -DCMAKE_BUILD_TYPE={Debug|Release} .."
     - build project: make
 
 
@@ -115,12 +115,16 @@ Clone this repository to your local hard disc.
    - mkdir build
    - cd build
    - cmake -G"Visual Studio 15 2017 Win64" ..
+   or 
+   - cmake -G "Visual Studio 16 2019" -A x64 ..
    - cmake --build . --config Release
 * build daiex:
    - Change to the source directory of your local copy of the daiex repository.
    - Create a folder build.
    - Change to this folder
    - cmake -G"Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release ..
+   or 
+   - cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release ..
    - cmake --build . --config Release
 
 Create a package, which includes all files you need to use daiex

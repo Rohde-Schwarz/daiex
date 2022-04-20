@@ -13,7 +13,6 @@
 	* See the License for the specific language governing permissions and
 	* limitations under the License.
 */
-/*******************************************************************************/
 
 #pragma once
 
@@ -107,9 +106,9 @@ public:
   /// @brief constructor taking in file descriptor as argument. To be used only for reading
   IqxFileImpl(int fd);
   /// @brief constructor. To be used only for writing offline files
-  IqxFileImpl(const std::string& filename, std::string applicationName, std::string comment, const std::vector<std::pair<std::string, IqxStreamDescDataIQ16>>& iqStreams);
+  IqxFileImpl(const std::string& filename, std::string applicationName, std::string comment, const std::vector<std::pair<std::string, IqxStreamDescDataIQ>>& iqStreams);
   /// @brief constructor. To be used only for on-the-fly writing
-  IqxFileImpl(int fd, const std::string& descname, const std::vector<std::pair<std::string, IqxStreamDescDataIQ16>>& iqStreams, std::vector<std::string> tags, const std::pair<std::string, uint32_t>& gpsStream);
+  IqxFileImpl(int fd, const std::string& descname, const std::vector<std::pair<std::string, IqxStreamDescDataIQ>>& iqStreams, std::vector<std::string> tags, const std::pair<std::string, uint32_t>& gpsStream);
   /// @brief destructor
   ~IqxFileImpl();
 
@@ -149,7 +148,6 @@ public:
   const std::string& getStreamSource(size_t streamno) const;
   /// @brief get the ids of all IQ streams
   const std::vector<size_t>& getIqStreamNumbers() const;
-
   /// @brief get the number of frames for all streams
   const std::vector<uint64_t>& getStreamsNoOfFrames() const;
   /// @brief get the number of frames for a particular stream
@@ -158,62 +156,71 @@ public:
   const std::vector<uint64_t>& getStreamsNoOfSamples() const;
   /// @brief get the number of samples for a particular stream
   uint64_t getStreamNoOfSamples(size_t streamno) const;
-  /// @brief get the stream id for corresponding the stream name
+  /// @brief get the stream id for the corresponding iq stream name
   size_t getStreamNo(const std::string& streamOrArrayName) const;
   /// @brief get data rate of the corresponding the stream number
   double getIqStreamDataRate(size_t streamno) const;
+  /// @brief get sample rate of the corresponding iq stream number
+  double getIqStreamSampleRate(size_t streamno) const;
   /// @brief get measurement parameters (ref. level, center frequency, resolution, sample rate) of the corresponding source
-  IqxStreamDescDataIQ16 getIqStreamParameters(const std::string& source) const;
-  ///
-  int getSequenceNo(size_t streamno) const;
-  ///
-  void setSequenceNo(size_t streamno, int sequenceNo);
-  /// @brief write a data frame to file
-  void writeDataFrame(int64_t streamno, int64_t sequenceno, std::vector<int16_t>& data);
-  /// @brief update recording duration
-  void setDuration(iqx_timespec duration);
-  /// @brief set comment for iqx file (optional)
-  void setComment(std::string comment);
-  /// @brief set bookmarks for iqx file (optional)
-  void setBookmarks(std::map<std::string, iqx_timespec> bookmarks);
+  IqxStreamDescDataIQ getIqStreamParameters(const std::string& source) const;
   /// @brief get data type of a stream
   IqxStreamType getStreamType(size_t streamNo) const;
   /// @brief get gps update rate
   uint32_t getGpsUpdateRate() const;
   /// @brief get stream types of all streams in file
   std::map<size_t, IqxStreamType> getStreamTypes() const;
-  /// @brief set the time when recording is created. This is important for files that are imported
-  void setStartTime(iqx_timespec time);
   /// @brief get export permission of particular stream
   IqxExportPermission getExportPermission(size_t streamno) const;
   /// @brief get timestamp of a particular sample
-  iqx_timespec getTimestampFromSample(uint64_t streamno, uint64_t sample);
+  iqx_timespec getTimestampFromSample(size_t streamno, uint64_t sample);
   /// @brief get sample number of a given timestamp
-  uint64_t getSampleFromTimestamp(uint64_t streamno, iqx_timespec timestamp);  
-  /// @brief add a single trigger entry to trigger table
-  void addTriggerEntry(IqxTriggerEntry& trigger);
+  uint64_t getSampleFromTimestamp(size_t streamno, iqx_timespec timestamp);
   /// @brief get trigger table of a particular stream
-  std::vector<IqxTriggerEntry> getTriggers(uint64_t streamno);
+  std::vector<IqxTriggerEntry> getTriggers(size_t streamno);
+  /// @brief get trigger table of a all streams in the recording
+  std::vector<IqxTriggerEntry> getAllTriggers() const;
+  /// @brief get cue entry of a given timestamp
+  IqxCueEntry getCueEntry(size_t streamno, iqx_timespec timestamp);
+  /// @brief get the next cue entry of a given timestamp. This is needed for partial export: the exported duration must contain the full second!
+  IqxCueEntry getNextCueEntry(size_t streamno, iqx_timespec timestamp);
+  /// @brief read uuid
+  const std::string& getUuid() const;
+  ///
+  int getSequenceNo(size_t streamno) const;
+  ///
+  void setSequenceNo(size_t streamno, int sequenceNo);  
+  /// @brief update recording duration
+  void setDuration(iqx_timespec duration);
+  /// @brief set comment for iqx file (optional)
+  void setComment(std::string comment);
+  /// @brief set bookmarks for iqx file (optional)
+  void setBookmarks(std::map<std::string, iqx_timespec> bookmarks);  
+  /// @brief set the time when recording is created. This is important for files that are imported
+  void setStartTime(iqx_timespec time);
+   /// @brief add a single trigger entry to trigger table
+  void addTriggerEntry(IqxTriggerEntry& trigger);
   /// @brief add a single cue entry to cue table
   void addCueEntry(IqxCueEntry& cue);
-  /// @brief get cue entry of a given timestamp
-  IqxCueEntry getCueEntry(uint64_t streamno, iqx_timespec timestamp);
+  /// @brief add overrun entry
+  void addOverrunEntry(IqxOverrunEntry& overrun);
   /// @brief edit description name
   void editRecordingName(const std::string& descname);
   /// @brief edit tags
   void editTags(const std::vector<std::string>& tags);
   /// @brief edit comment (user text)
   void editComment(const std::string& comment);
-  //DEBUG
-  /// @brief read uuid
-  std::string readUUID();
+  /// @brief write a data frame to file
+  void writeDataFrame(int64_t streamno, int64_t sequenceno, std::vector<int16_t>& data);
+  /// @brief indicate if file has overrun
+  bool hasOverrun() const;
 
 
 private:
   /// @brief constructor help function
   void initRead(bool edit);
   /// @brief constructor help function
-  void initWrite(const std::string& descname, const std::vector<std::pair<std::string, IqxStreamDescDataIQ16>>& iqStreams, const std::pair<std::string, uint32_t>& gpsStream);
+  void initWrite(const std::string& descname, const std::vector<std::pair<std::string, IqxStreamDescDataIQ>>& iqStreams, const std::pair<std::string, uint32_t>& gpsStream);
 
   /// @brief read a IQX file frame
   void readFrame(IqxPreamble& preamble, IqxFrameData& frame);
@@ -241,7 +248,7 @@ private:
   void writeFileDescriptionFrame(IqxFileDescHeader& header, const void* data);
 
   /// @brief write a IQ stream description frame to file
-  void writeIqStreamDescriptionFrame(size_t streamNumber, const std::string& streamName, const IqxStreamDescDataIQ16& iqStreamDescriptor);
+  void writeIqStreamDescriptionFrame(size_t streamNumber, const std::string& streamName, const IqxStreamDescDataIQ& iqStreamDescriptor);
 
   /// @brief write a GPS stream description frame to file
   void writeGpsStreamDescriptionFrame(size_t streamNumber, const std::string& streamName, uint32_t updateRate);
@@ -285,14 +292,20 @@ private:
   /// @brief read cue frame from iqx file to member variable m_cues
   void readCueFrame(IqxPreamble& preamble);
 
-  /// @brief get cue table of a particular stream
-  std::vector<IqxCueEntry> getCues(uint64_t streamno);
-
   /// @brief overwrite existing tags in the recording
   void overwriteExistingTags(const std::vector<std::string>& tags, size_t size);
 
   /// @brief make the existing tag invalid (used for file editing)
   void invalidateExistingTag();
+
+  /// @brief get cue table of a particular stream
+  std::vector<IqxCueEntry> getCues(size_t streamno);
+
+  /// @brief write overrun frame to iqx file
+  void writeOverrunFrame();
+
+  /// @brief read overrun frame from iqx file to member variable m_overruns
+  void readOverrunFrame(IqxPreamble& preamble);
 
   // ------------------------------------ Properties -------------------------------------------------------
 
@@ -320,7 +333,7 @@ private:
   std::vector<uint64_t> m_iqStreamNoOfFrames;
   /// stream ids and their number of samples
   std::vector<uint64_t> m_iqStreamNoOfSamples;
-  /// a map which holds the stram no for each stream name
+  /// a map which holds the iq stream no for each iq stream name
   std::map<std::string, size_t> m_streamNo;
   /// sequence of the stream for writing;
   std::vector<int> m_sequenceno;
@@ -331,7 +344,7 @@ private:
   /// data rate of each stream
   std::vector<double> m_streamDataRate;
   /// measurement data of each iq stream
-  std::map<std::string, IqxStreamDescDataIQ16> m_iqProperties;
+  std::map<std::string, IqxStreamDescDataIQ> m_iqProperties;
   /// recording duration
   iqx_timespec m_duration;
   /// update rate of Ublox
@@ -339,24 +352,28 @@ private:
   /// time when the recording starts
   iqx_timespec m_startTime;
   /// list of sample rate for each stream. Needed for calculation of duration
-  std::vector<float64_t> m_sampleRates;
+  std::vector<float64_t> m_streamSampleRate;
   /// list of samples for each stream. Needed for calculation of duration
   std::vector<float64_t> m_samples;
   /// list of bookmarks
   std::map<std::string, iqx_timespec> m_bookmarks;
-  /* Note: the size of m_cues and m_triggers is always a multiple of IQX_DATA_ALIGNMENT as required by O_DIRECT write/read */
-  /* Therefore, to get the vector size which contains actual data use variable m_cueNoOfEntries and m_trigNoOfEntries accordingly */
+  /* Note: the size of m_cues, m_triggers and m_overruns is always a multiple of IQX_DATA_ALIGNMENT as required by O_DIRECT write/read */
+  /* Therefore, to get the vector size which contains actual data use variable m_cueNoOfEntries, m_trigNoOfEntries and m_overrunNoOfEntries accordingly */
   /// list of cue entries
   std::vector<IqxCueEntry, AlignedAllocator<IqxCueEntry, IQX_DATA_ALIGNMENT> > m_cues;
   uint64_t m_cueNoOfEntries;
   /// list of trigger entries
   std::vector<IqxTriggerEntry, AlignedAllocator<IqxTriggerEntry, IQX_DATA_ALIGNMENT> > m_triggers;
   uint64_t m_trigNoOfEntries;
+  /// list of overrun entries
+  std::vector<IqxOverrunEntry, AlignedAllocator<IqxOverrunEntry, IQX_DATA_ALIGNMENT> > m_overruns;
+  uint64_t m_overrunNoOfEntries;
+  /// flag to indicate file has overrun
+  bool m_hasOverrun;
   bool m_edit;  
   /// uuid of the iqx file
   std::string m_uuid;
-
-
+  /// list of necessary information of iqx file to be used for comment editing feature
   class MetaOffset
   {
   public:
