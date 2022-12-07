@@ -147,6 +147,8 @@ private:
   std::map<std::string, std::string> m_metaData;
   /// indicates if file is opened for read or write
   bool m_write;
+  double m_scaleFactor{ 1.0 };
+  double m_multiplicator{ 1.0 / INT16_MAX };
 };
 
 }

@@ -46,24 +46,20 @@ add_dependencies( daitest daiex )
 
 ### installer ###
 
+set( PLATFORM "amd64" )
+
 IF( WIN32 )
   set( CPACK_ARCHIVE_COMPONENT_INSTALL ON)
   set( CPACK_GENERATOR "ZIP" )
   set( CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF )
 
-  set( PLATFORM "x86" )
-  if( ${CMAKE_GENERATOR} MATCHES "Win64" )
-    set( PLATFORM "amd64" )
-  endif()
-
   file( STRINGS "${CMAKE_CURRENT_LIST_DIR}/Version.txt" VERSION )
 
+  set( GENERATOR "vs16" )
   if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 15" )
     set( GENERATOR "vs15" )
     set (PLATFORMTOOLSET "v141")
   endif()
-  set( GENERATOR "vs15" )
-  set (PLATFORMTOOLSET "v141")
 
   set( CPACK_PACKAGE_FILE_NAME "LibDataImportExport-${VERSION}-${GENERATOR}-${PLATFORM}-${CMAKE_BUILD_TYPE}" )
 
@@ -73,10 +69,6 @@ ELSE()
   set( CPACK_GENERATOR "TGZ" )
   set( CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF )
 
-  set( PLATFORM "x86" )
-  if( ${CMAKE_GENERATOR} MATCHES "Win64" )
-    set( PLATFORM "amd64" )
-  endif()
 
   file( STRINGS "${CMAKE_CURRENT_LIST_DIR}/Version.txt" VERSION )
 

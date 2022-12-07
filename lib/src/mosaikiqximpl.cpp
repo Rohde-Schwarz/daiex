@@ -153,7 +153,10 @@ void MosaikIqxImpl::assembleIqxMetaData()
 	  {
 	    //m_metaData.emplace(m_piqx->getStreamSource(i) + " reflevel", to_string(iqprops.reflevel));
       m_metaData.emplace("Ch" + to_string(i + 1) + "_RefLevel[dBm]", to_string(iqprops.reflevel));
-	  }
+      float fullScale = (10.0 * log10(1.0 / 50.0) + 30.0);
+      m_scaleFactor = pow(10, (iqprops.reflevel - fullScale) / 20.0);
+      m_multiplicator = m_scaleFactor / INT16_MAX;
+    }
 	  if (iqprops.bandwidth_valid)
 	  {
 		  //m_metaData.emplace(m_piqx->getStreamSource(i) + " bandwith", to_string(iqprops.bandwith*1E6));
@@ -671,21 +674,21 @@ int MosaikIqxImpl::readArrayAll(const std::string& arrayName, std::vector<float>
       case rFloatVector:
       {
         float f = data[value];
-        f = f / INT16_MAX;
+        f = f * m_multiplicator;
         vfValues.push_back(f);
         break;
       }
       case rDoubleVector:
       {
         double d = data[value];
-        d = d / INT16_MAX;
+        d = d * m_multiplicator;
         vdValues.push_back(d);
         break;
       }
       case rFloatPointer:
       {
         float f = data[value];
-        f = f / INT16_MAX;
+        f = f  * m_multiplicator;
         *fPtr = f;
         fPtr++;
         break;
@@ -693,7 +696,7 @@ int MosaikIqxImpl::readArrayAll(const std::string& arrayName, std::vector<float>
       case rDoublePointer:
       {
         double d = data[value];
-        d = d / INT16_MAX;
+        d = d  * m_multiplicator;
         *dPtr = d;
         dPtr++;
         break;
@@ -837,21 +840,21 @@ int MosaikIqxImpl::readChannelAll(const std::string& channelName, std::vector<fl
         case rFloatVector:
         {
            float f = data[value];
-           f = f / INT16_MAX;
+           f = f  * m_multiplicator;
            vfValues.push_back(f);
            break;
         }
         case rDoubleVector:
         {
            double d = data[value];
-           d = d / INT16_MAX;
+           d = d  * m_multiplicator;
            vdValues.push_back(d);
            break;
         }
         case rFloatPointer:
         {
            float f = data[value];
-           f = f / INT16_MAX;
+           f = f  * m_multiplicator;
            *fPtr = f;
            fPtr++;
            break;
@@ -859,7 +862,7 @@ int MosaikIqxImpl::readChannelAll(const std::string& channelName, std::vector<fl
         case rDoublePointer:
         {
            double d = data[value];
-           d = d / INT16_MAX;
+           d = d  * m_multiplicator;
            *dPtr = d;
            dPtr++;
            break;

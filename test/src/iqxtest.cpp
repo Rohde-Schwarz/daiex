@@ -144,6 +144,23 @@ TEST_F(IqxTest, withGps)
 #endif
 
 #if 0
+TEST_F(IqxTest, refLev)
+{
+
+	const string inIqxStr = "C:/12bit/16bit/c001cb03-4110-4e88-9af6-3775f6820d88.iqx";
+	Iqx inIqx(inIqxStr);
+
+	vector<string> arrayNames;
+	int ret = inIqx.readOpen(arrayNames);
+	EXPECT_EQ(ErrorCodes::Success, ret) << "file open failed";
+	vector<ChannelInfo> channels;
+	map<string, string> metadata;
+	int ret2 = inIqx.getMetadata(channels, metadata);
+	EXPECT_EQ(ErrorCodes::Success, ret) << "get metadata failed";
+}
+#endif
+
+#if 0
 TEST_F(IqxTest, muchTriggers)
 {
 
@@ -663,25 +680,15 @@ string openAndGetName(Iqx &inIqx)
 #if 0 // 12 Bit Test
 TEST_F(IqxTest, Test12Test)
 {
-	const string inputIqx12 = Common::TestOutputDir + "f1259e2a-25d7-4793-a0e9-d13f5f0374ac.iqx"; // tg100
-	//const string inputIqx12 = Common::TestOutputDir + "09386c4c-f860-43f9-a518-ed690063cc74.iqx"; // tg80
-   Iqx inIqx12(inputIqx12);
-   string chan12;
-   chan12 = openAndGetName(inIqx12);
-   vector<float> valuesIFV12;
-   int ret = inIqx12.readArray(chan12 + "_I", valuesIFV12, 20*KB, 0/*2*MB+1*/);
-
-   const string inputIqx16 = Common::TestOutputDir + "c001cb03-4110-4e88-9af6-3775f6820d88.iqx"; // tg100
-   //const string inputIqx16 = Common::TestOutputDir + "e9d99a47-7e35-40a0-9bbe-771d1d75731b.iqx"; // tg80
-   Iqx inIqx16(inputIqx16);
-   string chan16;
-   chan16 = openAndGetName(inIqx16);
-   vector<float> valuesIFV16;
-   ret = inIqx16.readArray(chan16 + "_I", valuesIFV16, 20 * KB, 0/*2 * MB + 1*/);
-
-	
-	vector<float> valuesIFV2;
-	ret = inIqx12.readChannel(chan12, valuesIFV2, 20 * KB, 2 * MB + 1);
+	const string inputIqx = Common::TestOutputDir + "f1259e2a-25d7-4793-a0e9-d13f5f0374ac.iqx";
+	//const string inputIqx = Common::TestOutputDir + "09386c4c-f860-43f9-a518-ed690063cc74.iqx";
+   Iqx inIqx(inputIqx);
+   string chan;
+   chan = openAndGetName(inIqx);
+   vector<float> valuesIFV;
+   int ret = inIqx.readArray(chan + "_I", valuesIFV, 20*KB, 2*MB+1);
+   vector<float> valuesIFV2;
+   ret = inIqx.readChannel(chan, valuesIFV2, 20 * KB, 2 * MB + 1);
 }
 #endif
 

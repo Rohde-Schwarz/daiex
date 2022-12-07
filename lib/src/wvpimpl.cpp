@@ -91,15 +91,15 @@ namespace rohdeschwarz
 				m_wv.GetParam(IWvIn::eParamMSegLevelOffsetPeak, &mSegPeakOffs);
 				//printf("MSegLevelOffsetPeak: %f\n", mSegPeak);
 				double rfRmsLevel;
-            m_wv.GetParam(IWvIn::eParamRfRmsLevel, &rfRmsLevel);
+        m_wv.GetParam(IWvIn::eParamRfRmsLevel, &rfRmsLevel);
 				if (rfRmsLevel != 0.0)
-            {
-               //printf("RfRmsLevel: %f\n", rfRmsLevel);
-               float fullScale = (10.0 * log10(1.0 / 50.0) + 30.0);
-               float fileRms = fullScale - rmsOffs;
-               m_scaleFactor = pow(10, (rfRmsLevel - fileRms) / 20.0);
-               //printf("m_scaleFactor: %f\n", m_scaleFactor);
-               m_multiplicator = m_scaleFactor / INT16_MAX;
+        {
+          //printf("RfRmsLevel: %f\n", rfRmsLevel);
+          float fullScale = (10.0 * log10(1.0 / 50.0) + 30.0);
+          float fileRms = fullScale - rmsOffs;
+          m_scaleFactor = pow(10, (rfRmsLevel - fileRms) / 20.0);
+          //printf("m_scaleFactor: %f\n", m_scaleFactor);
+          m_multiplicator = m_scaleFactor / INT16_MAX;
 				}
 				int scrambled;
 				m_wv.GetParam(IWvIn::eParamIsScrambled, &scrambled);
