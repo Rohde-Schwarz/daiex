@@ -554,7 +554,7 @@ namespace rohdeschwarz
           // Get the digits before decimal point
           while (valid_digit(*p)) 
           {
-            r = (r * 10.0) + (*p - '0');
+            r = (r * 10.0) + (static_cast<T>(*p) - '0');
             ++p; 
             ++c;
           }
@@ -567,7 +567,7 @@ namespace rohdeschwarz
             ++p;
             while (*p >= '0' && *p <= '9') 
             {
-              f = (f * 10.0) + (*p - '0');
+              f = (f * 10.0) + (static_cast<T>(*p) - '0');
               ++p;
               scale*=10.0;
               ++c;

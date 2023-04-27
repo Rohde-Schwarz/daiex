@@ -92,7 +92,10 @@ void IqxFileImpl::initRead(bool edit)
 
   if (m_edit)
   {
-    memset(&m_metaOffset, 0, sizeof(m_metaOffset));
+    m_metaOffset.comment = 0;
+    m_metaOffset.descname = 0;
+    m_metaOffset.eof = 0;
+    m_metaOffset.tags.clear();
   }
 
   struct portable_stat st = {0};
@@ -1120,7 +1123,7 @@ IqxCueEntry IqxFileImpl::getCueEntry(size_t streamno, iqx_timespec timestamp)
 {
   double time = timestamp.tv_sec + timestamp.tv_nsec * 1e-9;
   vector<IqxCueEntry> cues = getCues(streamno);
-  for (size_t i = m_cueNoOfEntries - 1; i >= 0; i--)
+  for (int64_t i = m_cueNoOfEntries - 1; i >= 0; i--)
   {
     double timeOfFrame = cues[i].timestamp.tv_sec + cues[i].timestamp.tv_nsec * 1e-9;
     if (time >= timeOfFrame)
@@ -1179,7 +1182,7 @@ void IqxFileImpl::writeCueFrame()
 void IqxFileImpl::editRecordingName(const string& descname)
 { 
   portable_lseek(m_fd, 0, SEEK_SET);
-  strncpy(m_fileDescFrame.header().name, descname.c_str(), IQX_MAX_FILENAME_STRLEN);
+  snprintf(m_fileDescFrame.header().name, IQX_MAX_FILENAME_STRLEN, "%s", descname.c_str());
   m_fileDescFrame.header().name[IQX_MAX_FILENAME_STRLEN-1] = '\0';
   writeFileDescriptionFrame(m_fileDescFrame.header(), nullptr);
 }

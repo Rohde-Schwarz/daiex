@@ -186,8 +186,18 @@ namespace rohdeschwarz
           Mat_VarFree(matvar);
           return "";
         }
-
-        string value(static_cast<char*>(matvar->data), matvar->dims[1]);
+        string value;
+        if (matvar->data_size == 1) {
+          value.assign(static_cast<char*>(matvar->data), matvar->dims[1]);
+        }
+        else
+        {
+          value.reserve(matvar->dims[1]);
+          for (int i = 0; i < matvar->dims[1] * matvar->data_size; i += matvar->data_size)
+          {
+            value += (static_cast<char*>(matvar->data) + i);
+          }
+        }
 
         // remove possible null-termination
         value = string(value.c_str());
@@ -244,12 +254,13 @@ namespace rohdeschwarz
           throw DaiException(ErrorCodes::InvalidMatlabArraySize);
         }
 
-        size_t totalLength = 2 * matvar->dims[1];
+        size_t totalLength = 2 /* As Key and value are interleaved */ * matvar->dims[1] * matvar->data_size;
+        size_t strideSize = 2 * matvar->data_size;
         char * data = static_cast<char*>(matvar->data);
 
-        string key(stride_iterator<char*>(data, 2), stride_iterator<char*>(data + totalLength, 2));
-        string value(stride_iterator<char*>(data + 1, 2), stride_iterator<char*>(data + totalLength - 1, 2));
-        value.append(data + totalLength - 1, data + totalLength);
+        string key(stride_iterator<char*>(data, strideSize), stride_iterator<char*>(data + totalLength, strideSize));
+        string value(stride_iterator<char*>(data + matvar->data_size, strideSize), stride_iterator<char*>(data + totalLength - matvar->data_size, strideSize));
+        value += (*(data + totalLength - matvar->data_size));
 
         // remove possible null-termination
         key = string(key.c_str());

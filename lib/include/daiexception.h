@@ -69,10 +69,10 @@ namespace rohdeschwarz
 
       private:
         /** @brief Error code of this exception. */
-        int errorCode_;
+        int errorCode_{0};
 
         /** @brief Error message of this exception. */
-        const char* errorMessage_;
+        const char* errorMessage_{""};
       };
     }
   }

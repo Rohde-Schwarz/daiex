@@ -17,7 +17,7 @@ The library provides standardized read and write functions that encapsulate all 
 | IQW (IQIQIQ)	| .iqw	| A file that contains Float32 data in a binary format ( values are stored in interleaved format, starting with the first I value ). The file does not contain any additional header information. The data order has to be changed before readOpen or writeOpen is called. |
 | WV (IQIQIQ)	| .wv	| A file that contains INT16 data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in signal generators.|
 |IQX (IQIQIQ)	| .iqx	| A file that contains INT16 data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in device IQW.|
-|AID (IQIQIQ)	|.iqx	|A file that contains I/Q data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in AMMOS project.|
+|AID (IQIQIQ)	|.aid	|A file that contains I/Q data in a binary format ( values are stored in interleaved format, starting with the first I value ). This format is used in AMMOS project.|
 |CSV	|.csv	|A file containing I/Q data in comma-separated values format (CSV). The comma-separator used can either be a semicolon or a comma, depending on the decimal separator used to save floating-point values (either dot or comma). Additional meta data can be saved. For details see class Csv.|
 |Matlab v4	|.mat	|A file containing I/Q data in matlab file format v4. Channel related information is stored in matlab variables with names starting with 'ChX_'. 'X' represents the number of the channel with a lower bound of 1, e.g. variable Ch1_ChannelName contains the name of the first channel. The corresponding data is contained in ChX_Data. Optional user data can be saved to variables named UserDataX, where 'X' starts at 0. Variable UserData_Count contains the number of UserData variables. For compatibility reasons user data needs to be saved as a 2xN char array, where the first row contains the key of the user data and the second row the actual value. Both rows must have the same column count and are therefore right-padded with white spaces. Variables can be written in arbitary order to the *.mat files. For details see IqMatlab. Limitations: In general, the file format is limited to a maximum of 2GB. A maximum of 100000000 can be stored in a single variable. Consequently, complex data can contain up to 50000000 samples. Note that all data is loaded into RAM before being written to the .mat file. Make sure to provide sufficient free memory.|
 |Matlab v7.3	|.mat	|A file containing I/Q data in matlab file format v7.3. Supportes the same functionality as matlab v4 file format, but requires the Matlab Compiler Runtime (MCR) to be installed on the system. The installation needs to be registered in the global PATH environment variable. The machine type of the installation needs to match the machine type of DataImportExport, e.g. 32bit DataImportExport cannot be linked against 64bit MCR. For details see IQMatlab. Limitations: When calling FinishPartialIQ, all data needs to be loaded into memory. The matlab v7.3. file format requires the Matlab Compiler Runtime (MCR) to be installed on the system and registered in the PATH environment variable. Download an MCR version >= 7.2 from http://www.mathworks.de/products/compiler/mcr/. Note that all data is loaded into RAM before being written to the .mat file. Make sure to provide sufficient free memory.|
@@ -43,12 +43,12 @@ The following operating systems are supported
 | OS | comment |
 | ---------- |:-------------|
 | Linux | tested on Ubuntu 18.04
-| Windows | tested on Windows 10 with Visual Studio 2017
+| Windows | tested on Windows 10 with Visual Studio 2017 and 2019
 | macOS | tested on Mojave 10.14.4. There are still some problems with .mat files.|
 
 ## Open source acknowledgement
 
-This library uses the following modules.
+Daiex library uses the following modules.
 
 | Module | version | license | origin | copyright | comment |
 | ------ | ------- | ------- |------- | --------- | ------- |
@@ -60,7 +60,7 @@ This library uses the following modules.
 | PugiXml | 1.8  | MIT | https://github.com/zeux/pugixml | Copyright (C) 2006-2017, by Arseny Kapoulkine ||
 | Google C++ Testing Framework | 1.7.0 | BSD 3-Clause | http://code.google.com/p/googletest/ | Copyright 2008, Google Inc. ||
 
-This library uses a lot of open source packages. We would like to thank the authors for their valuable work.
+Daiex library uses a lot of open source packages. We would like to thank the authors for their valuable work.
 A list of all used packages is located in lib/doc/Inventory.xml.
 
 
@@ -68,7 +68,7 @@ A list of all used packages is located in lib/doc/Inventory.xml.
 
 | dir        | comment       |
 | ---------- |:-------------|
-|  3rdparty  | contains open source projects wihich are used by daiex lib |
+|  3rdparty  | contains open source projects which are used by daiex lib |
 |  app       | an example app |
 |  cmake     | cmake modules  |
 |  lib       | the source directory of daiex lib. Contains also documentation |
@@ -80,72 +80,44 @@ A list of all used packages is located in lib/doc/Inventory.xml.
 
 ### Requirements
 
-Install git and cmake.
+Install git and conan (pip3 install conan).
 
 ### Getting sources
 
 Clone this repository to your local hard disc.
 
-### Linux Ubuntu (18.04)
+### Linux Ubuntu (20.04)
 
 * make sure that zlib and libarchive and uuid-dev are available. If not, install via "sudo apt-get install zlib1g-dev libarchive-dev uuid-dev".
   maybe you also need something like "sudo cp  /usr/lib/x86_64-linux-gnu/libz.so /usr/lib/x86_64-linux-gnu/libzlib.so"
-* make sure doxygen is installed (sudo apt-get install doxygen)
-* download https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar and unpack
-* Build hdf5:
-    - create build folder "build" at the level of the "hdf5-1.10.0-patch1"-folder
-    - cd "hdf5-1.10.0-patch1/build"
-    - set install path and configure project using cmake. E.g., install to folder "usr/local/hdf5":  "cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/hdf5 -DHDF5_ENABLE_Z_LIB_SUPPORT=1 ../".
-    - build target: "make"
-    - install: "make install" -> hdf5 should now be available in "/usr/local/hdf5"
-* build libdai:
+* build daiex lib:
     - create build folder e.g. "build"
     - cd "build"
-    - set cmake prefix path: "export CMAKE_PREFIX_PATH=/usr/local/hdf5/share/cmake"
-    - configure project: "cmake -DCMAKE_BUILD_TYPE={Debug|Release} .."
-    - build project: make
+    - conan install --build=missing .. swp/stable
+    
+* if you want to build with test, you need "compiler.libcxx=libstdc++11" for gtest
+* if you want to build with docu, make sure doxygen is installed (sudo apt-get install doxygen)
+    
+To create a package the old way:
+* conan install -s build_type=Release -o with_test=True -o with_doc=True --build=missing .. swp/stable
+* conan build -c ..
+* cmake --build . --config Release --target package
 
 
-### Windows (Visual Studio 2017 64)
-* make sure that you have Visual Studio 2017 64 installed.
+
+### Windows (Visual Studio 2019 64)
+* make sure that you have Visual Studio 2019 64 installed.
 * download and install nunit 2.x and doxygen from the www.
 * and also download the html help workshop, which generates a chm file.
-* download and build zlib:
-   - unpack zlib from 3rdparty directory to your  hard disc and change into the unpacked directory
-   - mkdir build
-   - cd build
-   - cmake -G"Visual Studio 15 2017 Win64" ..
-   or 
-   - cmake -G "Visual Studio 16 2019" -A x64 ..
-   - cmake --build . --config Release
-* build daiex:
-   - Change to the source directory of your local copy of the daiex repository.
-   - Create a folder build.
-   - Change to this folder
-   - cmake -G"Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release ..
-   or 
-   - cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release ..
-   - cmake --build . --config Release
 
-Create a package, which includes all files you need to use daiex
-* cmake --build . --config Release --target package
-If you have not downloaded and installed the HTML help workshop from Microsoft, you will get a strange error (setlocale).
+* build daiex lib:
+    - create build folder e.g. "build"
+    - cd "build"
+    - conan install --build=missing .. swp/stable
 
 
-### macOS (Mojave 10.14.4)
-
-* download and install homebrew
-* install all needed packages with brew. On my machine there were the following packets (brew list):
-cmake, gmp,	libarchive,	ossp-uuid, xz,
-gcc, hdf5, libmatio, mpfr, gdbm, isl, libmpc, openssl, readline,	szip.
-* build libdai:
-   - create build folder e.g. "build"
-   - cd "build"
-   - configure project: "cmake -DCMAKE_BUILD_TYPE={Debug|Release}"
-   - build project: make
-
-The version of libmatio downloaded by brew uses szip instead of zlib. You should have a look at the szip license or try to compile libmatio with zlib yourself.
-Using macOS there are some problems with .mat files so some tests are disabled at the moment.
+### macOS 
+* long time not tested
 
 ## Test
 

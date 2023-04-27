@@ -3,37 +3,41 @@
 #
 
 add_subdirectory(iqxformat) 
-FIND_PACKAGE( Archive REQUIRED )
+FIND_PACKAGE( LibArchive REQUIRED )
 if (APPLE)
 else()
-FIND_PACKAGE( ZLib REQUIRED )
-FIND_PACKAGE( LibHdf5 REQUIRED )
+FIND_PACKAGE( ZLIB REQUIRED )
+FIND_PACKAGE( HDF5 REQUIRED )
 endif()
-FIND_PACKAGE( LibMatIo REQUIRED )
+FIND_PACKAGE( matio REQUIRED )
+FIND_PACKAGE( pugixml REQUIRED )
 
 ### doxygen configuration start ###
 
 FIND_PACKAGE( Doxygen )
 FIND_PACKAGE( HTMLHelp )
-IF( DOXYGEN )
-  CONFIGURE_FILE (
-    ${CMAKE_SOURCE_DIR}/lib/doc/Doxyfile.in
-    ${CMAKE_BINARY_DIR}/lib/doc/Doxyfile
-  )
-  ADD_CUSTOM_TARGET(
-    doc ALL
-    ${DOXYGEN} ${CMAKE_BINARY_DIR}/lib/doc/Doxyfile
-    DEPENDS ${CMAKE_SOURCE_DIR}/lib/doc/Doxyfile.in
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-    SOURCES
-    ${CMAKE_SOURCE_DIR}/lib/doc/mainpage.dox
-  )
-  SET_PROPERTY(
-    TARGET doc
-    PROPERTY FOLDER "doc"
-  )
-
-ENDIF( DOXYGEN )
+if ( BUILD_DOC )
+  IF( DOXYGEN )
+    CONFIGURE_FILE (
+      ${CMAKE_SOURCE_DIR}/lib/doc/Doxyfile.in
+      ${CMAKE_BINARY_DIR}/lib/doc/Doxyfile
+    )
+    ADD_CUSTOM_TARGET(
+      doc ALL
+      ${DOXYGEN} ${CMAKE_BINARY_DIR}/lib/doc/Doxyfile
+      DEPENDS ${CMAKE_SOURCE_DIR}/lib/doc/Doxyfile.in
+      COMMENT "Generating API documentation with Doxygen" VERBATIM
+      SOURCES
+      ${CMAKE_SOURCE_DIR}/lib/doc/mainpage.dox
+    )
+    SET_PROPERTY(
+      TARGET doc
+      PROPERTY FOLDER "doc"
+    )
+  ELSE()
+      message(FATAL_ERROR "Doc build requested but doxygen not found!")
+  ENDIF( DOXYGEN )
+ENDIF(BUILD_DOC)
 
 ### doxygen configuration end ###
 
@@ -61,10 +65,6 @@ FILE( GLOB MMF
   ${CMAKE_SOURCE_DIR}/3rdparty/mmf/*.cpp
   ${CMAKE_SOURCE_DIR}/3rdparty/mmf/*.hpp )
 
-FILE( GLOB PUGIXML
-  ${CMAKE_SOURCE_DIR}/3rdparty/PugiXml/*.cpp
-  ${CMAKE_SOURCE_DIR}/3rdparty/PugiXml/*.hpp )
-
 SET( ALL_COMMON
   ${SOURCES}
   ${SOURCES_PLATFORM}
@@ -72,7 +72,7 @@ SET( ALL_COMMON
   ${INCLUDES}
   ${AID_INCLUDES}
   ${MMF}
-  ${PUGIXML} )
+   )
 
 SET( RES_FILES libdai.rc )
 
@@ -97,21 +97,21 @@ SET( INC_DIRS
   include/
   aid/include/
   ${CMAKE_SOURCE_DIR}/3rdparty/mmf/
-  ${CMAKE_SOURCE_DIR}/3rdparty/PugiXml/ 
   ${CMAKE_SOURCE_DIR}/lib/iqxformat/include/ )
 
-TARGET_INCLUDE_DIRECTORIES( daiex PRIVATE ${INC_DIRS} )
+TARGET_INCLUDE_DIRECTORIES( daiex PUBLIC include PRIVATE ${INC_DIRS} )
 
 IF( WIN32 )
 
   TARGET_COMPILE_DEFINITIONS( daiex
-    PUBLIC EXPORT_MODULE )
+    PRIVATE EXPORT_MODULE )
 
-  TARGET_LINK_LIBRARIES( daiex 
-    LIBARCHIVE::LIBARCHIVESTATIC 
-    zlibstatic
-    LIBHDF5::LIBHDF5STATIC
-    libmatio_static 
+  TARGET_LINK_LIBRARIES( daiex PRIVATE
+    LibArchive::LibArchive
+    ZLIB::ZLIB
+    HDF5::C
+    pugixml::pugixml
+    matio::matio
     Rpcrt4.lib
 	  iqxformatstatic)
 
@@ -122,22 +122,24 @@ IF( WIN32 )
   ADD_CUSTOM_COMMAND( TARGET daiex POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.dll ${CMAKE_BINARY_DIR}/app/${CMAKE_BUILD_TYPE}/daiex.dll )
   ADD_CUSTOM_COMMAND( TARGET daiex POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.dll ${CMAKE_BINARY_DIR}/test/${CMAKE_BUILD_TYPE}/daiex.dll )
 ELSEIF (APPLE)
-  TARGET_LINK_LIBRARIES( daiex
+  TARGET_LINK_LIBRARIES( daiex PRIVATE
     /usr/local/opt/libarchive/lib/libarchive.dylib
-    #LIBARCHIVE::LIBARCHIVE
-    #hdf5-static
+    #LibArchive::LibArchive
+    #HDF5::C
+    pugixml::pugixml
     uuid
     matio 
     iqxformat)
 
 ELSEIF( UNIX )
 
-  TARGET_LINK_LIBRARIES( daiex
-    LIBARCHIVE::LIBARCHIVE
+  TARGET_LINK_LIBRARIES( daiex PRIVATE
+    LibArchive::LibArchive
     ZLIB::ZLIB
-    hdf5-static
+    HDF5::C
+    pugixml::pugixml
     uuid
-    libmatio
+    matio::matio
     iqxformat)
 
   # set warning level
@@ -148,13 +150,7 @@ ENDIF()
 
 ### installer ###
 
-#IF( WIN32 )
-  install( TARGETS daiex 
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-
-  install( FILES 
+set(export_includes
     include/dataimportexport.h
     include/idataimportexport.h
     include/itempdir.h
@@ -175,14 +171,26 @@ ENDIF()
     include/enums.h
     include/channelinfo.h
     include/settings.h
-    DESTINATION include)
+)
+set_target_properties(daiex PROPERTIES PUBLIC_HEADER "${export_includes}")
+
+#IF( WIN32 )
+  install( TARGETS daiex 
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
 IF( WIN32 )
   if( ${CMAKE_BUILD_TYPE} MATCHES "Debug" )
     install( FILES ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.pdb DESTINATION bin )
   endif()
-  install( FILES ${CMAKE_BINARY_DIR}/lib/doc/gen/LibDataImportExport.chm DESTINATION doc )
+  IF ( BUILD_DOC )
+    install( FILES ${CMAKE_BINARY_DIR}/lib/doc/gen/LibDataImportExport.chm DESTINATION doc )
+  ENDIF()
 ELSE()
-  install( FILES ${CMAKE_BINARY_DIR}/lib/liblibmatio.so DESTINATION lib )
+  # install( FILES ${CMAKE_BINARY_DIR}/lib/liblibmatio.so DESTINATION lib )
 ENDIF()
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory.xml DESTINATION doc )
   install( FILES ${CMAKE_SOURCE_DIR}/lib/doc/Inventory.xsd DESTINATION doc )

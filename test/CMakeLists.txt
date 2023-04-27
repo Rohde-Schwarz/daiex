@@ -10,6 +10,7 @@ IF(APPLE)
 ENDIF()
 
 #LINK_DIRECTORIES(/opt/local/lib)
+FIND_PACKAGE( LibArchive REQUIRED )
 
 ### gtest settings start ###
 IF( MSVC AND MSVC_VERSION EQUAL 1700 )
@@ -23,15 +24,12 @@ ENDIF()
 IF( MSVC AND CMAKE_CL_64 )
   ADD_DEFINITIONS( /D _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
 ENDIF()
-SET( GTEST_ROOT ${CMAKE_SOURCE_DIR}/3rdparty/googletest)
-SET( gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" )
-ADD_SUBDIRECTORY( ${GTEST_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/../contrib/gtest )
+find_package(GTest)
 
 ### gtest settings end ###
 
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_LIST_DIR}/../lib/include )
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_LIST_DIR}/src )
-INCLUDE_DIRECTORIES( ${GTEST_ROOT}/include )
 
 ADD_LIBRARY( libdai SHARED IMPORTED )
 SET_PROPERTY( TARGET libdai PROPERTY INTERFACE_INCLUDE_DIRECTORIES  ${CMAKE_CURRENT_LIST_DIR}/../lib/include )
@@ -60,8 +58,8 @@ IF( WIN32 )
 
   TARGET_LINK_LIBRARIES( daitest
     libdai
-    gtest 
-    LIBARCHIVE::LIBARCHIVESTATIC 
+    GTest::gtest
+    LibArchive::LibArchive
     )
 
   # set warning level
@@ -69,11 +67,13 @@ IF( WIN32 )
 
   # copy dll
   ADD_CUSTOM_COMMAND( TARGET daitest POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.dll ${CMAKE_BINARY_DIR}/test/${CMAKE_BUILD_TYPE}/daiex.dll )
+  set_target_properties(daitest PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "\"${CMAKE_CURRENT_SOURCE_DIR}/res\" \"${CMAKE_CURRENT_BINARY_DIR}/result_log\"")
+  set_target_properties(daitest PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=$<TARGET_FILE_DIR:daiex>;%PATH%")
 
 ELSEIF( APPLE )
   TARGET_LINK_LIBRARIES( daitest
     libdai
-    gtest
+    GTest::gtest
     /usr/local/opt/libarchive/lib/libarchive.dylib
     dl )
 
@@ -84,8 +84,8 @@ ELSEIF( UNIX )
 
   TARGET_LINK_LIBRARIES( daitest
     libdai
-    gtest
-    LIBARCHIVE::LIBARCHIVE
+    GTest::gtest
+    LibArchive::LibArchive
     dl )
 
   # set warning level

@@ -13,10 +13,10 @@
 
 #pragma once
 
-#define VERMAJOR 1
+#define VERMAJOR 2
 #define VERMINOR 0
-#define VERBUILD 34
-#define FILEVER "1.0.34\0"
+#define VERBUILD 0
+#define FILEVER "2.0.0\0"
 
 
 /*** @endcond ***/

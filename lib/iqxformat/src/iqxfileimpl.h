@@ -377,10 +377,10 @@ private:
   class MetaOffset
   {
   public:
-    size_t descname;
-    size_t comment;
+    size_t descname{0};
+    size_t comment{0};
     std::vector<size_t> tags;
-    size_t eof;
+    size_t eof{0};
   };
   MetaOffset m_metaOffset;
 };

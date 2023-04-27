@@ -2,20 +2,25 @@
 # Mosaik.LibdataImportExport/wrapper_test
 #
 
-file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/wrapper )
+set(PROJNAME daiex_wrapper_test)
+set(SRC_FILES
+    "src/InterfaceTest.cs"
+    "src/SettingsTest.cs"
+    "src/AssemblyInfo.cs"
+    "src/Common.cs"
+)
 
-set( CONFIGURATION ${CMAKE_BUILD_TYPE} )
+add_library(${PROJNAME} SHARED 
+    ${SRC_FILES} 
+)
 
-set( PLATFORM x64 )
-set( TARGET_PLATFORM x64 )
 
-string( REPLACE "/" "\\" SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/src/" )
-
-set( DAIEX_WRAPPER ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.lib )
-set( BUILD_DIR ${CMAKE_BINARY_DIR}/wrapper_test/${CMAKE_BUILD_TYPE} )
-
-set( CS_PROJECT ${CMAKE_BINARY_DIR}/daiex_wrapper_test.csproj )
-configure_file( ${CMAKE_CURRENT_LIST_DIR}/daiex_wrapper_test.csproj.in ${CS_PROJECT} @ONLY )
-
-include_external_msproject( wrapper_test ${CS_PROJECT}
-  TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC )
+target_compile_definitions(${PROJNAME} PRIVATE _UNICODE UNICODE)
+target_include_directories(${PROJNAME} PUBLIC include)
+target_link_libraries(${PROJNAME} PRIVATE daiex_wrapper)
+set_target_properties(${PROJNAME} PROPERTIES VS_GLOBAL_KEYWORD "ManagedCProj")
+set_property(TARGET ${PROJNAME} PROPERTY VS_GLOBAL_CLRSupport "true")
+set_target_properties(${PROJNAME} PROPERTIES COMMON_LANGUAGE_RUNTIME "")
+set_target_properties(${PROJNAME} PROPERTIES VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0")
+set_property(TARGET ${PROJNAME} PROPERTY VS_DOTNET_REFERENCES "System" "System.Core" "System.Xml.Linq" "System.Data.DataSetExtensions" "Microsoft.CSharp" "System.Data" "System.Xml")
+set_property(TARGET ${PROJNAME} PROPERTY  VS_PACKAGE_REFERENCES "nunit_3.13.*")

@@ -2,51 +2,49 @@
 # Mosaik.LibdataImportExport/wrapper
 #
 
-  set( GENERATOR "" )
-  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 11" )
-    set( GENERATOR "vs11" )
-    set (PLATFORMTOOLSET "v110")
-  endif()
-  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 12" )
-    set( GENERATOR "vs12" )
-    set (PLATFORMTOOLSET "v120")
-  endif()
-  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 15" )
-    set( GENERATOR "vs15" )
-    set (PLATFORMTOOLSET "v141")
-  endif()
+set(SRC_FILES
+    src/assemblyInfo.cpp
+    src/channelinfo_wrapper.cpp
+    src/dataimportexportbase_wrapper.cpp
+    src/filetypeservice_wrapper.cpp
+    src/helpers.cpp
+    src/iqcsv_wrapper.cpp
+    src/iqmatlab_wrapper.cpp
+    src/iqtar_wrapper.cpp
+    src/iqw_wrapper.cpp
+    src/settings_wrapper.cpp
+)
+set(export_includes
+    include/assemblyInfo.h
+    include/channelinfo_wrapper.h
+    include/dataimportexportbase_wrapper.h
+    include/enums_wrapper.h
+    include/exceptions.h
+    include/filetypeservice_wrapper.h
+    include/helpers.h
+    include/iarrayselector_wrapper.h
+    include/icsvselector_wrapper.h
+    include/idataimportexport_wrapper.h
+    include/iqcsv_wrapper.h
+    include/iqmatlab_wrapper.h
+    include/iqtar_wrapper.h
+    include/iqw_wrapper.h
+    include/settings_wrapper.h
+)
 
-  if( ${CMAKE_GENERATOR} MATCHES "Visual Studio 16" )
-    set( GENERATOR "vs16" )
-    set (PLATFORMTOOLSET "v142")
-  endif()
-# message(STATUS "PLATFORMTOOLSET: " ${PLATFORMTOOLSET})
-
-
-file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/wrapper )
-
-set( CONFIGURATION ${CMAKE_BUILD_TYPE} )
-
-set( PLATFORM x64 )
-
-set( INC_DIR ${CMAKE_CURRENT_LIST_DIR}/include )
-set( SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src )
-set( RES_DIR ${CMAKE_CURRENT_LIST_DIR} )
-set( NATIVE_INC_DIR ${CMAKE_CURRENT_LIST_DIR}/../lib/include )
-set( NATIVE_LIB ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/daiex.lib )
-set( BUILD_DIR ${CMAKE_BINARY_DIR}/wrapper/${CMAKE_BUILD_TYPE} )
-set( INTERMEDIATE_DIR ${CMAKE_BINARY_DIR}/wrapper/${CMAKE_BUILD_TYPE}/intermediate )
-set( LOG_DIR ${CMAKE_BINARY_DIR}/wrapper/${CMAKE_BUILD_TYPE} )
-
-set( CS_PROJECT ${CMAKE_BINARY_DIR}/daiex_wrapper.vcxproj )
-configure_file( ${CMAKE_CURRENT_LIST_DIR}/daiex_wrapper.vcxproj.in ${CS_PROJECT} @ONLY )
-configure_file( ${CMAKE_CURRENT_LIST_DIR}/daiex_wrapper.vcxproj.filters.in ${CMAKE_BINARY_DIR}/daiex_wrapper.vcxproj.filters @ONLY )
-
-include_external_msproject( wrapper ${CS_PROJECT}
-  TYPE 8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942 
-  PLATFORM ${PLATFORM} )
-
+add_library(daiex_wrapper SHARED 
+    ${SRC_FILES} 
+    ${export_includes}
+    libdai_wrapper.rc
+)
+target_compile_definitions(daiex_wrapper PRIVATE _UNICODE UNICODE)
+target_include_directories(daiex_wrapper PUBLIC include)
+target_link_libraries(daiex_wrapper PRIVATE daiex)
+set_target_properties(daiex_wrapper PROPERTIES VS_GLOBAL_KEYWORD "ManagedCProj")
+set_property(TARGET daiex_wrapper PROPERTY VS_GLOBAL_CLRSupport "true")
+set_target_properties(daiex_wrapper PROPERTIES COMMON_LANGUAGE_RUNTIME "")
+set_target_properties(daiex_wrapper PROPERTIES VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0")
+set_property(TARGET daiex_wrapper PROPERTY VS_DOTNET_REFERENCES "System" "System.Data")
 
 ### installer ###
-
-install( FILES ${CMAKE_BINARY_DIR}/wrapper/${CMAKE_BUILD_TYPE}/daiex_wrapper.dll DESTINATION bin )
+install( TARGETS daiex_wrapper )
